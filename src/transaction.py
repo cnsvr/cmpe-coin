@@ -7,7 +7,7 @@ import ecdsa
 # make it globally
 logging.basicConfig(level=logging.INFO)
 
-class CmpETranscation:
+class CmpETransaction:
   def __init__(self, fromAddress: str, toAddress: str, amount: int):
     self.fromAddress = fromAddress
     self.toAddress = toAddress
@@ -30,7 +30,6 @@ class CmpETranscation:
 
   def isTransactionValid(self):
     return True
-
 
 '''
 # SECP256k1 is the Bitcoin elliptic curve
