@@ -53,13 +53,7 @@ class CmpETransaction:
 # SECP256k1 is the Bitcoin elliptic curve
 sk = SigningKey.generate(curve=SECP256k1)
 pk = sk.verifying_key
-print(type (pk))
-print(pk.to_string())
-transaction = CmpETransaction("A","B",100)
-signature = sk.sign(transaction.hash.encode('utf-8'))
-print(pk.verify(signature, transaction.hash.encode('utf-8')))
 '''
-
 
 '''
 private_key = SigningKey.generate(curve=SECP256k1)
