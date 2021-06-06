@@ -27,7 +27,11 @@ class CmpEBlock():
 
     def hasValidTransactions(self):
         for transaction in self.transactions:
-            if not transaction.isTransactionValid():
+            try:
+                if not transaction.isTransactionValid():
+                    return False
+            except:
+                print('Failed to validate transaction.')
                 return False
         
         return True
