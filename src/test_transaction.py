@@ -62,6 +62,3 @@ class TestTransaction(unittest.TestCase):
     validation = transaction_instance.isTransactionValid()
     
     self.assertEqual(validation, False)
-
-if __name__ == '__main__':
-    unittest.main()
