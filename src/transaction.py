@@ -2,20 +2,21 @@ from datetime import datetime
 import time
 import logging
 import hashlib
-from ecdsa import SigningKey, VerifyingKey, SECP256k1
+from ecdsa import SigningKey, VerifyingKey
 
 # make it globally
 logging.basicConfig(level=logging.INFO)
 
 class CmpETransaction:
-  def __init__(self, fromAddress, toAddress, amount):
+  def __init__(self, fromAddress, toAddress, amount, logging = True):
     self.fromAddress = fromAddress
     self.toAddress = toAddress
     self.amount = amount
     self.timestamp = time.time()
     self.hash = self.__calculateTransactionHash()
     self.signature = None
-    logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
+    if (logging):
+      logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
                                                                                        fromAddress,
                                                                                        toAddress,
@@ -46,32 +47,3 @@ class CmpETransaction:
         isTransactionValid = False
 
     return isTransactionValid
-
-
-'''
-sk_A = SigningKey.generate(curve=SECP256k1)
-pk_A = sk_A.verifying_key
-
-sk_B = SigningKey.generate(curve=SECP256k1)
-pk_B = sk_B.verifying_key
-
-
-transaction = CmpETransaction(pk_A, pk_B, 100)
-
-transaction.signTransaction(sk_A)
-print(transaction.isTransactionValid())
-transaction.amount = 300
-print(transaction.isTransactionValid())
-'''
-
-'''
-# SECP256k1 is the Bitcoin elliptic curve
-sk = SigningKey.generate(curve=SECP256k1)
-pk = sk.verifying_key
-'''
-
-'''
-private_key = SigningKey.generate(curve=SECP256k1)
- string_private_key = private_key.to_string()
- SigningKey.from_string(string_private_key, curve=SECP256k1)
-'''

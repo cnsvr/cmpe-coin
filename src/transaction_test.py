@@ -16,7 +16,7 @@ class TestTransaction(unittest.TestCase):
     '''
       Test that transaction instance is valid.
     '''
-    transaction_instance =  CmpETransaction(pk_A, pk_B, 100)
+    transaction_instance =  CmpETransaction(pk_A, pk_B, 100, False)
     self.assertEqual(transaction_instance.fromAddress, pk_A)
     self.assertEqual(transaction_instance.toAddress, pk_B)
     self.assertEqual(transaction_instance.amount, 100)
@@ -25,7 +25,7 @@ class TestTransaction(unittest.TestCase):
     '''
       Test that it can calculate hash.
     '''
-    transaction_instance =  CmpETransaction(pk_A, pk_B, 200)
+    transaction_instance =  CmpETransaction(pk_A, pk_B, 200, False)
     string_block = "{}{}{}{}".format(transaction_instance.fromAddress, 
                                      transaction_instance.toAddress,
                                      transaction_instance.amount, 
@@ -38,7 +38,7 @@ class TestTransaction(unittest.TestCase):
     '''
       Test that it can sign signature
     '''
-    transaction_instance =  CmpETransaction(pk_A, pk_B, 200)
+    transaction_instance =  CmpETransaction(pk_A, pk_B, 200, False)
     transaction_instance.signTransaction(sk_A)
     self.assertNotEqual(transaction_instance.signature, None)
 
@@ -46,7 +46,7 @@ class TestTransaction(unittest.TestCase):
     '''
       Test that transaction is valid.
     '''
-    transaction_instance =  CmpETransaction(pk_A, pk_B, 200)
+    transaction_instance =  CmpETransaction(pk_A, pk_B, 200, False)
     transaction_instance.signTransaction(sk_A)
     self.assertEqual(transaction_instance.isTransactionValid(), True)
 
@@ -54,7 +54,7 @@ class TestTransaction(unittest.TestCase):
     '''
       Test that transaction is invalid.
     '''
-    transaction_instance =  CmpETransaction(pk_A, pk_B, 200)
+    transaction_instance =  CmpETransaction(pk_A, pk_B, 200, False)
     transaction_instance.signTransaction(sk_A)
 
     # change amount of transaction
