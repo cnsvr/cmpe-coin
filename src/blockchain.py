@@ -1,4 +1,5 @@
 import logging
+import block
 
 class CmpEBlockchain:
     def __init__(self, chain, pendingTransactions=[], validationReward=1, difficulty=20):
@@ -8,6 +9,12 @@ class CmpEBlockchain:
         self.difficulty = difficulty
 
     def createInitialDummyBlock():
+        pass
+    
+    def addTransactionToPendingList(transx):
+        this.pendingTransactions.append(transx)
+    
+    def validatePendingTransactions(rewardAddress):
         pass
 
     def getBalanceOf(self, address):
