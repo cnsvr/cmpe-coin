@@ -2,7 +2,7 @@ from datetime import datetime
 import time
 import logging
 import hashlib
-from ecdsa import SigningKey, VerifyingKey
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
 # make it globally
 logging.basicConfig(level=logging.INFO)
@@ -48,6 +48,21 @@ class CmpETransaction:
     return isTransactionValid
 
 
+'''
+sk_A = SigningKey.generate(curve=SECP256k1)
+pk_A = sk_A.verifying_key
+
+sk_B = SigningKey.generate(curve=SECP256k1)
+pk_B = sk_B.verifying_key
+
+
+transaction = CmpETransaction(pk_A, pk_B, 100)
+
+transaction.signTransaction(sk_A)
+print(transaction.isTransactionValid())
+transaction.amount = 300
+print(transaction.isTransactionValid())
+'''
 
 '''
 # SECP256k1 is the Bitcoin elliptic curve
