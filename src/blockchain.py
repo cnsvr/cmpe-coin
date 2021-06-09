@@ -1,5 +1,8 @@
 import logging
 from block import Block
+from transaction import CmpETransaction
+
+INITIAL_AMOUNT = 50
 
 class CmpEBlockchain:
     def __init__(self, chain, pendingTransactions=[], validationReward=1, difficulty=20):
@@ -8,8 +11,11 @@ class CmpEBlockchain:
         self.validationReward = validationReward
         self.difficulty = difficulty
 
-    def createInitialDummyBlock():
-        pass
+
+    def createInitialDummyBlock(self, address):
+        initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
+        genesisBlock = Block(0, [initialTransaction], None)
+        return genesisBlock        
 
     def isChainValid(self):
         if len(self.chain) == 0:
@@ -28,8 +34,10 @@ class CmpEBlockchain:
             prevBlock = self.chain[index]
 
             if not prevBlock.hasValidTransactions():
+                logging.info("Chain has nonvalid transactions.")
                 return False
             if not prevBlock.calculateCurrBlockHash().startswith("0" * int(self.difficulty)):
+                logging.info("Block is not validated.")
                 return False
 
             prevBlockHash = prevBlock.calculateCurrBlockHash()
@@ -39,12 +47,13 @@ class CmpEBlockchain:
                 return False
 
             lastBlock = prevBlock
-
-        if len(self.chain[0].transactions) == 0 and self.chain[0].prevBlockHash == None:
-            logging.info("Genesis block is not correct.")
-            return True
         
+        if len(self.chain[0].transactions) == 1 and self.chain[0].transactions[0].amount == INITIAL_AMOUNT and self.chain[0].fromAddress == None:
+            return True
+
+        logging.info("Genesis block is not correct.")
         return False
+ 
     
     def addTransactionToPendingList(transx):
         self.pendingTransactions.append(transx)
