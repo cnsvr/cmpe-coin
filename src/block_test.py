@@ -25,7 +25,7 @@ class TestBlock(unittest.TestCase):
         transactions = [1,2,3,4]
         proofOfWork = 10
         prevBlockHash = "1234567890"
-
+        # check if the hash of the block calculated is equal to the valid hash value.  
         test_block = CmpEBlock(index, transactions, prevBlockHash, proofOfWork=proofOfWork, timestamp=timestamp)
         self.assertTrue(isinstance(test_block.currBlockHash, type("")), "Should be a string")
         self.assertGreater(len(test_block.currBlockHash, 0, "Should be initialized."))
@@ -40,15 +40,22 @@ class TestBlock(unittest.TestCase):
 
         difficulty = 3
         
+        # check if validate block calculates proof of work and hash
         pow, calc_hash = test_block.validateBlock(difficulty)
         self.assertGreater(len(calc_hash), 0, "Should be a string.")
         self.assertTrue(isinstance(pow, type(1)), "Should be an integer.")
-
+        # check if identical blocks create the same hash and proof of work
         second_test_block = CmpEBlock(0, [], "00001234", timestamp=test_block.timestamp, proofOfWork=pow)
         second_pow, second_calc_hash = second_test_block.validateBlock(difficulty)
 
         self.assertEqual(calc_hash, second_calc_hash, "Should be the same hash value.")
         self.assertEqual(pow, second_pow, "Should be the same proof of work value.")
+
+        # check if an altered block creates a different proof of work and hash value
+        second_test_block.timestamp = 1
+        invalid_pow, invalid_calc_hash = second_test_block.validateBlock(3)
+        self.assertNotEqual(invalid_pow, pow, "Should have different proof of work value due to not being identical.")
+        self.assertNotEqual(invalid_calc_hash, calc_hash, "Should have different hash calculated due to not being identical.")
 
     def test_has_valid_transactions(self):
         index = 0
