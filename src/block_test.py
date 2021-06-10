@@ -28,7 +28,7 @@ class TestBlock(unittest.TestCase):
         # check if the hash of the block calculated is equal to the valid hash value.  
         test_block = CmpEBlock(index, transactions, prevBlockHash, proofOfWork=proofOfWork, timestamp=timestamp)
         self.assertTrue(isinstance(test_block.currBlockHash, type("")), "Should be a string")
-        self.assertGreater(len(test_block.currBlockHash, 0, "Should be initialized."))
+        self.assertGreater(len(test_block.currBlockHash), 0, "Should be initialized.")
 
         block = str(test_block.index) + str(test_block.timestamp) + str(test_block.transactions) + str(test_block.prevBlockHash) + str(test_block.proofOfWork)
         h = sha256(block.encode()).hexdigest()
@@ -52,10 +52,12 @@ class TestBlock(unittest.TestCase):
         self.assertEqual(pow, second_pow, "Should be the same proof of work value.")
 
         # check if an altered block creates a different proof of work and hash value
-        second_test_block.timestamp = 1
-        invalid_pow, invalid_calc_hash = second_test_block.validateBlock(3)
-        self.assertNotEqual(invalid_pow, pow, "Should have different proof of work value due to not being identical.")
+        third_test_block = CmpEBlock(0, [], "123456788", timestamp=111)
+        invalid_pow, invalid_calc_hash = third_test_block.validateBlock(difficulty)
+       
         self.assertNotEqual(invalid_calc_hash, calc_hash, "Should have different hash calculated due to not being identical.")
+        self.assertNotEqual(test_block.proofOfWork, invalid_pow, "Should have different proof of work value due to not being identical.")
+        
 
     def test_has_valid_transactions(self):
         index = 0

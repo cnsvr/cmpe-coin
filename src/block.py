@@ -23,6 +23,7 @@ class CmpEBlock():
             calculatedHash = self.calculateCurrBlockHash()
         
         print('iteration count:', iter_count)
+        self.currBlockHash = calculatedHash
         return self.proofOfWork, calculatedHash
 
     def hasValidTransactions(self):
