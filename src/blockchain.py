@@ -22,32 +22,28 @@ class CmpEBlockchain:
             logging.info("Chain is empty, must have genesis block.")
             return False
 
-        lastBlock = self.chain[-1]
-        if not lastBlock.hasValidTransactions():
-            return False
-        if not lastBlock.calculateCurrBlockHash().startswith("0" * int(self.difficulty)):
-            return False
-
-        index = len(self.chain)-2
+        index = len(self.chain)-1
 
         while index > 0:
-            prevBlock = self.chain[index]
+            lastBlock = self.chain[index]
 
-            if not prevBlock.hasValidTransactions():
+            lastBlockHash = lastBlock.calculateCurrBlockHash()
+
+            if not lastBlock.hasValidTransactions():
                 logging.info("Chain has nonvalid transactions.")
                 return False
-            if not prevBlock.calculateCurrBlockHash().startswith("0" * int(self.difficulty)):
+            if not lastBlockHash.startswith("0" * int(self.difficulty)):
                 logging.info("Block is not validated.")
                 return False
 
-            prevBlockHash = prevBlock.calculateCurrBlockHash()
+            prevBlock = chain[index - 1]
 
-            if prevBlockHash != lastBlock.prevBlockHash:
+            if lastBlock.prevBlockHash != prevBlock.calculateCurrBlockHash():
                 logging.info("Chain is not properly linked.")
                 return False
 
-            lastBlock = prevBlock
-        
+
+        # Check initial block of the chain. Must be the genesis block.
         if len(self.chain[0].transactions) == 1 and self.chain[0].transactions[0].amount == INITIAL_AMOUNT and self.chain[0].fromAddress == None:
             return True
 
