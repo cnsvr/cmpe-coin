@@ -1,6 +1,6 @@
 import unittest
 import hashlib
-from ecdsa import SigningKey, VerifyingKey, SECP256k1
+from ecdsa import SigningKey, SECP256k1
 from transaction import CmpETransaction
 
 sk_A = SigningKey.generate(curve=SECP256k1)
@@ -49,6 +49,20 @@ class TestTransaction(unittest.TestCase):
     transaction_instance =  CmpETransaction(pk_A, pk_B, 200, False)
     transaction_instance.signTransaction(sk_A)
     self.assertEqual(transaction_instance.isTransactionValid(), True)
+
+  def test_is_transaction_valid_if_fromAddress_None(self):
+    '''
+      Test that transaction is valid if the fromAddress is None (It is reward transaction).
+    '''
+    transaction_instance =  CmpETransaction(None, pk_B, 1, False)
+    self.assertEqual(transaction_instance.isTransactionValid(), True)
+
+  def test_is_transaction_throw_valueError_if_amount_is_bigger_than_max_reward(self):
+    '''
+      Test that transaction is invalid if the fromAddress is None and amount is bigger than MAX_REWARD.
+    '''
+    with self.assertRaises(ValueError):
+      transaction_instance =  CmpETransaction(None, pk_B, 2, False)
 
   def test_invalid_transaction(self):
     '''

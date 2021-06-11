@@ -4,22 +4,37 @@ import logging
 import hashlib
 from ecdsa import SigningKey, VerifyingKey
 
-# make it globally
+MAX_REWARD = 1 # CmpECoin
+
 logging.basicConfig(level=logging.INFO)
 
 class CmpETransaction:
-  def __init__(self, fromAddress, toAddress, amount, logging = True):
+  def __init__(self, fromAddress, toAddress, amount, log = True):
+
+    # If the fromAddress is null, it is called a reward transaction and amount can't be greater than MAX_REWARD CmpECoin.
+    if fromAddress == None and amount > MAX_REWARD:
+      raise ValueError("Amount can't be greater than MAX_REWARD (1 CmpECoin)")
+    
+    if fromAddress and not isinstance(fromAddress, VerifyingKey):
+      raise TypeError("fromAddress has to be an instance of VerifyingKey or None")
+
+    if not isinstance(toAddress, VerifyingKey):
+      raise TypeError("toAddress has to be an instance of VerifyingKey")
+    
+    if not amount > 0:
+      raise ValueError("Amount has to be greater than 0")
+
     self.fromAddress = fromAddress
     self.toAddress = toAddress
     self.amount = amount
     self.timestamp = time.time()
     self.hash = self.__calculateTransactionHash()
     self.signature = None
-    if (logging):
+    if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
-                                                                                       fromAddress,
-                                                                                       toAddress,
+                                                                                       fromAddress.to_string() if fromAddress else fromAddress,
+                                                                                       toAddress.to_string(),
                                                                                        datetime.fromtimestamp(self.timestamp)))
   
   def __calculateTransactionHash(self):
@@ -35,15 +50,16 @@ class CmpETransaction:
 
   def isTransactionValid(self):
     isTransactionValid = True
-    if not isinstance(self.fromAddress, VerifyingKey):
-      logging.info("Public Key is not instance of VerifyingKey. FromAddress must be valid Public Key")
-      return False
+    # If the fromAddress is None, no need to signature
+    if not self.fromAddress:
+      return isTransactionValid
     else:
       # Recalculates the hash to detect any changes of properties
       self.hash = self.__calculateTransactionHash()
       try:
         isTransactionValid = self.fromAddress.verify(self.signature, self.hash.encode('utf-8'))
       except:
+        # add log here
         isTransactionValid = False
 
     return isTransactionValid
