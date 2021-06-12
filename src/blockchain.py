@@ -36,11 +36,13 @@ class CmpEBlockchain:
                 logging.info("Block is not validated.")
                 return False
 
-            prevBlock = chain[index - 1]
+            prevBlock = self.chain[index - 1]
 
             if lastBlock.prevBlockHash != prevBlock.calculateCurrBlockHash():
                 logging.info("Chain is not properly linked.")
                 return False
+
+            index = index - 1
 
 
         # Check initial block of the chain. Must be the genesis block.
