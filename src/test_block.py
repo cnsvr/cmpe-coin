@@ -72,5 +72,5 @@ class TestBlock(unittest.TestCase):
         
         # TODO(eridincu): Add the test to check the functionality when the transactions are valid.
 
-if __name__ == '__main__':
-    unittest.main()
+
+unittest.main()
