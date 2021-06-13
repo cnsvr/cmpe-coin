@@ -12,9 +12,12 @@ class CmpEBlockchain:
         self.difficulty = difficulty
 
 
-    def createInitialDummyBlock(self, address):
-        initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
-        genesisBlock = Block(0, [initialTransaction], None)
+    def createInitialDummyBlock(self, addresses):
+        transactions = []
+        for address in addresses:
+            initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
+            transactions.append(initialTransaction)
+        genesisBlock = Block(0, transactions, None)
         return genesisBlock        
 
     def isChainValid(self):
@@ -46,11 +49,15 @@ class CmpEBlockchain:
 
 
         # Check initial block of the chain. Must be the genesis block.
-        if len(self.chain[0].transactions) == 1 and self.chain[0].transactions[0].amount == INITIAL_AMOUNT and self.chain[0].fromAddress == None:
-            return True
-
-        logging.info("Genesis block is not correct.")
-        return False
+        if self.chain[0].prevBlockHash != None:
+            logging.info("Genesis block has no previous block.")
+            return False
+        for transaction in self.chain[0].transactions:
+            if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
+                logging.info("Genesis block cannot have transactions with different amount and address.")
+                return False
+                
+        return True
  
     
     def addTransactionToPendingList(self, transx):
