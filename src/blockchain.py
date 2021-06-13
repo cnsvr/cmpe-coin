@@ -53,11 +53,13 @@ class CmpEBlockchain:
         return False
  
     
-    def addTransactionToPendingList(transx):
+    def addTransactionToPendingList(self, transx):
         self.pendingTransactions.append(transx)
-    
-    def validatePendingTransactions(rewardAddress):
-        pass
+
+    def validatePendingTransactions(self, rewardAddress):
+        newBlock = Block(0, self.pendingTransactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
+        newBlock.validateBlock(self.difficulty)
+        self.pendingTransactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
 
     def getBalanceOf(self, address):
         balance = 0
