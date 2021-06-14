@@ -56,17 +56,26 @@ class CmpEBlockchain:
             if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
                 logging.info("Genesis block cannot have transactions with different amount and address.")
                 return False
-                
+
         return True
  
     
     def addTransactionToPendingList(self, transx):
-        self.pendingTransactions.append(transx)
+        if transx.isTransactionValid():
+            self.pendingTransactions.append(transx)
+            return True
+        return False
 
     def validatePendingTransactions(self, rewardAddress):
-        newBlock = Block(0, self.pendingTransactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
+        # TODO:
+        # Mutex?
+        # If new transactions are received during validation, should validation stop? 
+        # New transactions while validating can be added to a new list.
+        transactions = self.pendingTransactions.copy()
+        transactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        newBlock = Block(0, transactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
         newBlock.validateBlock(self.difficulty)
-        self.pendingTransactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        return newBlock
 
     def getBalanceOf(self, address):
         balance = 0
