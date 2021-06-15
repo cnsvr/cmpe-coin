@@ -76,19 +76,4 @@ class CmpETransaction:
     t['hash'] = self.hash
     t['signature'] = self.signature.hex()
     return json.dumps(t, default=lambda o: o.__dict__, indent=4)
-  
-  '''
-  def parseTransactionJSON(self, payload):
-    body = json.loads(payload)
-    fromAddress = VerifyingKey.from_string(bytes.fromhex(body['fromAddress']), curve=SECP256k1)
-    toAddress = VerifyingKey.from_string(bytes.fromhex(body['toAddress']), curve=SECP256k1)
-    amount = body['amount']
-    timestamp = body['timestamp']
-    hash = body['hash']
-    signature = bytes.fromhex(body['signature'])
 
-    transaction = CmpETransaction(fromAddress, toAddress, amount, False)
-    transaction.timestamp = timestamp
-    transaction.hash = hash
-    transaction.signature = signature
-  '''
