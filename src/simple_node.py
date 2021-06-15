@@ -86,7 +86,7 @@ class CmpECoinSimpleNode():
         pass
 
 
-
+'''
 transaction = CmpETransaction(pk_N, pk_N, 100, False)
 transaction.signTransaction(sk_N)
 
@@ -98,3 +98,4 @@ channel.queue_declare(queue='transxRcvQ')
 channel.basic_publish(exchange='',
                 routing_key='transxRcvQ',
                 body=transaction_json)
+'''
