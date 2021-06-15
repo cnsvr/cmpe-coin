@@ -2,13 +2,14 @@ from datetime import datetime
 import time
 import logging
 import hashlib
+import json
 from ecdsa import SigningKey, VerifyingKey
 
 MAX_REWARD = 1 # CmpECoin
 
 logging.basicConfig(level=logging.INFO)
 
-class CmpETransaction:
+class CmpETransaction:  
   def __init__(self, fromAddress, toAddress, amount, log = True):
 
     # If the fromAddress is null, it is called a reward transaction and amount can't be greater than MAX_REWARD CmpECoin.
@@ -44,9 +45,10 @@ class CmpETransaction:
   def signTransaction(self, secretKey):
     if not isinstance(secretKey, SigningKey):
       logging.info("Secret Key is not instance of SigningKey. You can't sign the transaction")
-      return
+      return False
     else:
       self.signature = secretKey.sign(self.hash.encode('utf-8'))
+      return True
 
   def isTransactionValid(self):
     isTransactionValid = True
@@ -63,3 +65,30 @@ class CmpETransaction:
         isTransactionValid = False
 
     return isTransactionValid
+
+
+  def toJSON(self):
+    t = {}
+    t['fromAddress'] = self.fromAddress.to_string().hex()
+    t['toAddress'] = self.toAddress.to_string().hex()
+    t['amount'] = self.amount
+    t['timestamp'] = self.timestamp
+    t['hash'] = self.hash
+    t['signature'] = self.signature.hex()
+    return json.dumps(t, default=lambda o: o.__dict__, indent=4)
+  
+  '''
+  def parseTransactionJSON(self, payload):
+    body = json.loads(payload)
+    fromAddress = VerifyingKey.from_string(bytes.fromhex(body['fromAddress']), curve=SECP256k1)
+    toAddress = VerifyingKey.from_string(bytes.fromhex(body['toAddress']), curve=SECP256k1)
+    amount = body['amount']
+    timestamp = body['timestamp']
+    hash = body['hash']
+    signature = bytes.fromhex(body['signature'])
+
+    transaction = CmpETransaction(fromAddress, toAddress, amount, False)
+    transaction.timestamp = timestamp
+    transaction.hash = hash
+    transaction.signature = signature
+  '''
