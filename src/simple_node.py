@@ -1,8 +1,7 @@
-from os import truncate
+from threading import Thread, Lock
+import pika
 import numpy as np
 import logging
-import _thread
-import pika
 import json
 from time import process_time
 import binascii
@@ -18,6 +17,7 @@ pk_N = sk_N.verifying_key
 class CmpECoinSimpleNode():
     def __init__(self, netwDispatcherAddress, blockChain, myWallet, meanTransactionInterDuration, meanTransactionAmount, listenQForValidatedBlocksFromNetwDispatcher):
         self.netwDisptcherAddress = netwDispatcherAddress
+        self.blockChainMutex = Lock()
         self.blockChain = blockChain
         self.myWallet = myWallet
         self.meanTransactionInterDuration = meanTransactionInterDuration
@@ -33,31 +33,6 @@ class CmpECoinSimpleNode():
     
     # furkan
     def doRandomTransactions(self):
-        def newTransaction(self):
-            # Get the my current balance from blockchain.
-            my_current_balance = self.blockChain.getBalance(self.myWallet.getPublicKey())
-            self.myWallet.setCurrentBalance(my_current_balance)
-            amount = np.random.exponential(self.meanTransactionAmount)
-
-            # Find enough amount for valid transaction
-            while my_current_balance < amount:
-                amount = np.random.exponential(self.meanTransactionAmount)
-            
-            transaction = CmpETransaction(self.myWallet.getPublicKey(), pk_N, amount)
-
-            if transaction.signTransaction(self.myWallet.getPrivateKey()):
-                # Transaction is valid
-                self.myWallet.setCurrentBalance(self.myWallet.getCurrentBalance() -  amount)
-                # Connect to Validation Node and send the transaction.
-                # connection = pika.BlockingConnection(pika.ConnectionParameters(self.netwDispatcherAddress))
-                # channel = connection.channel()
-                # channel.queue_declare(queue='transactions')
-                transaction_json=transaction.toJSON()
-                # send the json to node.
-                
-            else:
-                return False
-
         # make a new thread and create random transaction and join thread to main thread.
         while True:
             duration = np.random.exponential(self.meanTransactionInterDuration)
@@ -68,7 +43,58 @@ class CmpECoinSimpleNode():
                 # logging.info("Wait for making a new transaction")
             
             # create a new thread and call newTransaction function.
+
+            newTransactionThread = Thread(target = self.newValidTransaction)
+            # newTransactionThread.start()
+
+    def newValidTransaction(self):
+        # Get the my current balance from blockchain.
+        self.blockChainMutex.acquire()
+        my_current_balance = self.blockChain.getBalance(self.myWallet.getPublicKey())
+        self.blockChainMutex.release()
+
+        self.myWallet.setCurrentBalance(my_current_balance)
+        amount = np.random.exponential(self.meanTransactionAmount)
+
+        # Find enough amount for valid transaction
+        while my_current_balance < amount:
+            amount = np.random.exponential(self.meanTransactionAmount)
+        
+        transaction = CmpETransaction(self.myWallet.getPublicKey(), pk_N, amount)
+
+        # Sign the transaction before sending it to the node.
+        if transaction.signTransaction(self.myWallet.getPrivateKey()):
+            # Transaction is valid
+            self.myWallet.setCurrentBalance(self.myWallet.getCurrentBalance() -  amount)
+            # Convert to transaction to Json format
+            transaction_json=transaction.toJSON()
+            # send the json to node.
+            self.sendTransactionToDispatcher(transaction_json)
+            return True
+        else:
+            return False
+    
+    def sendTransactionToDispatcher(self, transaction_json):
+        connection = pika.SelectConnection(self.parameters)        
+        channel = connection.channel()
+        channel.queue_declare(queue='transxRcvQ')
+        channel.basic_publish(exchange='',
+                      routing_key='transxRcvQ',
+                      body=transaction_json)
         
     def doRandomInvalidTransaction(self):
         pass
 
+
+
+transaction = CmpETransaction(pk_N, pk_N, 100, False)
+transaction.signTransaction(sk_N)
+
+transaction_json = transaction.toJSON()
+
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))        
+channel = connection.channel()
+channel.queue_declare(queue='transxRcvQ')
+channel.basic_publish(exchange='',
+                routing_key='transxRcvQ',
+                body=transaction_json)
