@@ -3,7 +3,7 @@ import pika
 import numpy as np
 import logging
 import json
-from time import process_time
+from time import sleep
 import binascii
 from transaction import CmpETransaction
 
@@ -36,16 +36,15 @@ class CmpECoinSimpleNode():
         # make a new thread and create random transaction and join thread to main thread.
         while True:
             duration = np.random.exponential(self.meanTransactionInterDuration)
-            random_transaction_time = process_time()
-            # wait for duration
-            while process_time() - random_transaction_time < duration:
-                pass
-                # logging.info("Wait for making a new transaction")
+            
+            # sleep for duration
+            sleep(duration)
             
             # create a new thread and call newTransaction function.
 
             newTransactionThread = Thread(target = self.newValidTransaction)
             # newTransactionThread.start()
+            # newTransactionThread.join()
 
     def newValidTransaction(self):
         # Get the my current balance from blockchain.
@@ -87,7 +86,7 @@ class CmpECoinSimpleNode():
 
 
 '''
-transaction = CmpETransaction(pk_N, pk_N, 100, False)
+transaction = CmpETransaction(pk_N, pk_N, 200, False)
 transaction.signTransaction(sk_N)
 
 transaction_json = transaction.toJSON()
