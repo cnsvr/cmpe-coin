@@ -72,6 +72,7 @@ class CmpEBlockchain:
         # If new transactions are received during validation, should validation stop? 
         # New transactions while validating can be added to a new list.
         transactions = self.pendingTransactions.copy()
+        self.pendingTransactions.clear()
         transactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
         newBlock = Block(0, transactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
         newBlock.validateBlock(self.difficulty)
