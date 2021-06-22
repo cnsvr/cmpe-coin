@@ -18,16 +18,30 @@ class CmpEBlockchain:
             initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
             transactions.append(initialTransaction)
         genesisBlock = Block(0, transactions, None)
-        return genesisBlock        
+        return genesisBlock
+      
 
     def isChainValid(self):
+
         if len(self.chain) == 0:
             logging.info("Chain is empty, must have genesis block.")
             return False
 
-        index = len(self.chain)-1
+        walletDict = dict()
 
-        while index > 0:
+        # Check initial block of the chain. Must be the genesis block.
+        if self.chain[0].prevBlockHash != None:
+            logging.info("Genesis block has no previous block.")
+            return False
+        for transaction in self.chain[0].transactions:
+            if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
+                walletDict[transaction.toAddress] = walletDict.get(transaction.toAddress, 0) + INITIAL_AMOUNT
+                logging.info("Genesis block cannot have transactions with different amount and address.")
+                return False
+
+        index = 1
+
+        while index < len(self.chain):
             lastBlock = self.chain[index]
 
             lastBlockHash = lastBlock.calculateCurrBlockHash()
@@ -45,17 +59,18 @@ class CmpEBlockchain:
                 logging.info("Chain is not properly linked.")
                 return False
 
-            index = index - 1
 
+            for transaction in lastBlock.transactions:
+                currentWallet = walletDict.get(transaction.fromAddress, 0)
+                if transaction.amount > currentWallet:
+                    logging.info(f"{transaction.fromAddress} spent more than it has. Chain not valid.")
+                    return False
+                walletDict[transaction.fromAddress] = walletDict.get(transaction.fromAddress, 0) - transaction.amount
 
-        # Check initial block of the chain. Must be the genesis block.
-        if self.chain[0].prevBlockHash != None:
-            logging.info("Genesis block has no previous block.")
-            return False
-        for transaction in self.chain[0].transactions:
-            if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
-                logging.info("Genesis block cannot have transactions with different amount and address.")
-                return False
+            for transaction in lastBlock.transactions:
+                walletDict[transaction.toAddress] = walletDict.get(transaction.toAddress, 0) + transaction.amount
+
+            index = index + 1
 
         return True
  
