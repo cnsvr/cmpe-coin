@@ -1,11 +1,11 @@
 import logging
-from block import Block
+from block import CmpEBlock
 from transaction import CmpETransaction
 
 INITIAL_AMOUNT = 50
 
 class CmpEBlockchain:
-    def __init__(self, chain, pendingTransactions=[], validationReward=1, difficulty=20):
+    def __init__(self, chain, pendingTransactions=[], validationReward=1, difficulty=2):
         self.chain = chain
         self.pendingTransactions = pendingTransactions
         self.validationReward = validationReward
@@ -17,7 +17,7 @@ class CmpEBlockchain:
         for address in addresses:
             initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
             transactions.append(initialTransaction)
-        genesisBlock = Block(0, transactions, None)
+        genesisBlock = CmpEBlock(0, transactions, None)
         return genesisBlock
       
 
@@ -112,7 +112,7 @@ class CmpEBlockchain:
         # New transactions while validating can be added to a new list.
         transactions = self.pendingTransactions.copy()
         transactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
-        newBlock = Block(0, transactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
+        newBlock = CmpEBlock(0, transactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
         newBlock.validateBlock(self.difficulty)
         return newBlock
 
