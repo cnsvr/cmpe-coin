@@ -69,8 +69,18 @@ class CmpEBlockchain:
                     return False, dict()
                 return False
 
+            fromNoneCount = 0 
 
             for transaction in lastBlock.transactions:
+                if transaction.fromAddress == None and fromNoneCount == 0:
+                    fromNoneCount = 1
+                    continue
+                elif transaction.fromAddress == None:
+                    logging.info(f"Two rewards in one block, chain not valid.")
+                    if returnWallet:
+                        return False, dict()
+                    return False
+                
                 currentWallet = walletDict.get(transaction.fromAddress, 0)
                 if transaction.amount > currentWallet:
                     logging.info(f"{transaction.fromAddress} spent more than it has. Chain not valid.")
