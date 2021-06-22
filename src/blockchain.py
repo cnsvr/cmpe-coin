@@ -21,10 +21,12 @@ class CmpEBlockchain:
         return genesisBlock
       
 
-    def isChainValid(self):
+    def isChainValid(self, returnWallet = False):
 
         if len(self.chain) == 0:
             logging.info("Chain is empty, must have genesis block.")
+            if returnWallet:
+                return False, dict()
             return False
 
         walletDict = dict()
@@ -37,6 +39,8 @@ class CmpEBlockchain:
             if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
                 walletDict[transaction.toAddress] = walletDict.get(transaction.toAddress, 0) + INITIAL_AMOUNT
                 logging.info("Genesis block cannot have transactions with different amount and address.")
+                if returnWallet:
+                    return False, dict()
                 return False
 
         index = 1
@@ -48,15 +52,21 @@ class CmpEBlockchain:
 
             if not lastBlock.hasValidTransactions():
                 logging.info("Chain has nonvalid transactions.")
+                if returnWallet:
+                    return False, dict()
                 return False
             if not lastBlockHash.startswith("0" * int(self.difficulty)):
                 logging.info("Block is not validated.")
+                if returnWallet:
+                    return False, dict()
                 return False
 
             prevBlock = self.chain[index - 1]
 
             if lastBlock.prevBlockHash != prevBlock.calculateCurrBlockHash():
                 logging.info("Chain is not properly linked.")
+                if returnWallet:
+                    return False, dict()
                 return False
 
 
@@ -64,6 +74,8 @@ class CmpEBlockchain:
                 currentWallet = walletDict.get(transaction.fromAddress, 0)
                 if transaction.amount > currentWallet:
                     logging.info(f"{transaction.fromAddress} spent more than it has. Chain not valid.")
+                    if returnWallet:
+                        return False, dict()
                     return False
                 walletDict[transaction.fromAddress] = walletDict.get(transaction.fromAddress, 0) - transaction.amount
 
@@ -72,6 +84,8 @@ class CmpEBlockchain:
 
             index = index + 1
 
+        if returnWallet:
+            return True, walletDict
         return True
  
     
