@@ -1,13 +1,15 @@
 from datetime import datetime
 import time
-import logging
+import logging, coloredlogs
 import hashlib
 import json
 from ecdsa import SigningKey, VerifyingKey
 
 MAX_REWARD = 1 # CmpECoin
 
-logging.basicConfig(level=logging.INFO)
+# export COLOREDLOGS_LEVEL_STYLES='info=35;error=124'
+
+coloredlogs.install()
 
 class CmpETransaction:  
   def __init__(self, fromAddress, toAddress, amount, log = True):
@@ -34,8 +36,8 @@ class CmpETransaction:
     if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
-                                                                                       fromAddress.to_string() if fromAddress else fromAddress,
-                                                                                       toAddress.to_string(),
+                                                                                       fromAddress.to_string().hex() if fromAddress else fromAddress,
+                                                                                       toAddress.to_string().hex(),
                                                                                        datetime.fromtimestamp(self.timestamp)))
   
   def __calculateTransactionHash(self):
@@ -44,7 +46,7 @@ class CmpETransaction:
 
   def signTransaction(self, secretKey):
     if not isinstance(secretKey, SigningKey):
-      logging.info("Secret Key is not instance of SigningKey. You can't sign the transaction")
+      logging.error("Secret Key is not instance of SigningKey. You can't sign the transaction")
       return False
     else:
       self.signature = secretKey.sign(self.hash.encode('utf-8'))
@@ -76,4 +78,3 @@ class CmpETransaction:
     t['hash'] = self.hash
     t['signature'] = self.signature.hex()
     return json.dumps(t, default=lambda o: o.__dict__, indent=4)
-
