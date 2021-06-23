@@ -105,14 +105,10 @@ class CmpEBlockchain:
             return True
         return False
 
-    def validatePendingTransactions(self, rewardAddress):
-        # TODO:
-        # Mutex?
-        # If new transactions are received during validation, should validation stop? 
-        # New transactions while validating can be added to a new list.
-        transactions = self.pendingTransactions.copy()
-        transactions.append(CmpETransaction(None, rewardAddress, self.validationReward))
-        newBlock = CmpEBlock(0, transactions, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
+    def validatePendingTransactions(self, pendingTransactionsCopy, rewardAddress):
+
+        pendingTransactionsCopy.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        newBlock = CmpEBlock(0, pendingTransactionsCopy, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
         newBlock.validateBlock(self.difficulty)
         return newBlock
 
