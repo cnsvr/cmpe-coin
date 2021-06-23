@@ -114,6 +114,10 @@ class CmpECoinValidatorNode():
         self.blockchain.append(block)
         if self.blockchain.isChainValid():
             logging.info(f'Validator Node {self.wallet.getPublicKey()} added a validated block to its blockchain.')
+            lastTimestamp = block.transactions.sort(key=lambda x: x.timestamp, reverse=True)[0].timestamp
+            for transaction in self.blockchain.pendingTransactions:
+                if transaction.timestamp < lastTimestamp:
+                    self.blockchain.pendingTransactions.remove(transaction)
             self.blockchainMutex.release()
             return True
         self.blockchain.pop()
