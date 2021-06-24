@@ -50,6 +50,9 @@ class CmpEBlock():
 
         return json_transactions
 
+    def __repr__(self):
+        return self.toJSON()
+        
     def toJSON(self):
         json_block = {}
         json_block['index'] = self.index

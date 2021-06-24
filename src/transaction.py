@@ -68,6 +68,8 @@ class CmpETransaction:
 
     return isTransactionValid
 
+  def __repr__(self):
+    return self.toJSON()
 
   def toJSON(self):
     t = {}
