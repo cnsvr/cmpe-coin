@@ -10,6 +10,7 @@ class CmpEBlockchain:
         self.pendingTransactions = pendingTransactions
         self.validationReward = validationReward
         self.difficulty = difficulty
+        self.toBeValidated = []
 
 
     def createInitialDummyBlock(self, addresses):
@@ -105,11 +106,11 @@ class CmpEBlockchain:
             return True
         return False
 
-    def validatePendingTransactions(self, pendingTransactionsCopy, rewardAddress):
-
-        pendingTransactionsCopy.append(CmpETransaction(None, rewardAddress, self.validationReward))
-        newBlock = CmpEBlock(0, pendingTransactionsCopy, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
+    def validatePendingTransactions(self, rewardAddress):
+        self.toBeValidated.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        newBlock = CmpEBlock(0, self.toBeValidated, self.chain[len(self.chain) - 1].calculateCurrBlockHash)
         newBlock.validateBlock(self.difficulty)
+        self.toBeValidated = []
         return newBlock
 
     def getBalanceOf(self, address):
