@@ -128,7 +128,7 @@ class CmpECoinValidatorNode():
 
     def handleBeaconAndStartValidationProc(self, channel, method, properties, body):
         message = self.parseBody(body)
-        # Transactionlar valid mi kontrol et
+        
         self.blockchainMutex.acquire()
         isValid, walletDict = self.blockchain.isChainValid(True)
         if not isValid:
@@ -136,6 +136,7 @@ class CmpECoinValidatorNode():
             f'Validator Node {self.wallet.getPublicKey()} has a non-valid blockchain.')
             return False
         for transaction in self.blockchain.pendingTransactions:
+            # Can not have reward on non-validated 
             if transaction.fromAddress == None:
                 self.blockchain.pendingTransactions.remove(transaction)
             currentWallet = walletDict.get(transaction.fromAddress, 0)
@@ -145,7 +146,8 @@ class CmpECoinValidatorNode():
                 walletDict[transaction.fromAddress] = walletDict.get(transaction.fromAddress, 0) - transaction.amount
     
         # should pendings removed when waiting new 
-
+        self.blockchain.toBeValidated = self.blockchain.pendingTransactions
+        self.blockchain.pendingTransactions = []
         self.blockchainMutex.release()
         newBlock = self.blockchain.validatePendingTransactions(self.wallet.getPublicKey)
         # TODO: Open thread and send block to dispatcher
