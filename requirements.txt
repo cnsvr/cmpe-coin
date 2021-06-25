@@ -1,3 +1,5 @@
 # logging 
-ecdsa~=0.17.0
-pika~=1.2.0
+ecdsa
+numpy
+pika
+coloredlogs
