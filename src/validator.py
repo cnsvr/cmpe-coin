@@ -83,9 +83,13 @@ class CmpECoinValidatorNode():
         connection = pika.SelectConnection(self.parameters, on_open_callback=self.on_connected_transaction)
         channel = connection.channel(on_open_callback=self.on_channel_open_transaction)
         channel.queue_declare(queue='joinCmpECoinNetw')
+        body = {
+            "type": 0,
+            "key": self.wallet.getPublicKey()
+        }
         channel.basic_publish(exchange='',
                               routing_key='joinCmpECoinNetw',
-                              body='join')
+                              body=body)
         channel.basic_consume(queue='joinCmpECoinNetw', on_message_callback=self.handleRecievedBlockchain,
                               auto_ack=True)
         pass
