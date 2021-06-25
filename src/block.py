@@ -4,6 +4,7 @@ import time
 import random
 import math
 import sys
+import json
 
 class CmpEBlock():
     def __init__(self, index, transactions, prevBlockHash, proofOfWork=0, timestamp=time.time()):
@@ -40,3 +41,24 @@ class CmpEBlock():
     def calculateCurrBlockHash(self):
         block = str(self.index) + str(self.timestamp) + str(self.transactions) + str(self.prevBlockHash) + str(self.proofOfWork)
         return sha256(block.encode()).hexdigest()
+
+    def convertTransactionsToJSON(self):
+        json_transactions = []
+
+        for transaction in self.transactions:
+            json_transactions.append(transaction.toJSON())
+
+        return json_transactions
+
+    def __repr__(self):
+        return self.toJSON()
+        
+    def toJSON(self):
+        json_block = {}
+        json_block['index'] = self.index
+        json_block['timestamp'] = self.timestamp
+        json_block['transactions'] = self.convertTransactionsToJSON()
+        json_block['prevBlockHash'] = self.prevBlockHash
+        json_block['proofOfWork'] = self.proofOfWork
+        json_block['currBlockHash'] = self.currBlockHash
+        return json.dumps(json_block, default=lambda o: o.__dict__, indent=4)
