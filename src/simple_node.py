@@ -4,21 +4,16 @@ import pika
 import time
 import random
 import numpy as np
-import logging, coloredlogs
+import logging
 import json
 from time import sleep
 import binascii
 from transaction import CmpETransaction
-from wallet import CmpECoinWallet
 
 
 from ecdsa import SigningKey, SECP256k1, VerifyingKey
 
 logging.getLogger("pika").setLevel(logging.WARNING)
-
-# PK and SK generation
-sk_N = SigningKey.generate(curve=SECP256k1)
-pk_N = sk_N.verifying_key
 
 class CmpECoinSimpleNode():
     def __init__(self, netwDispatcherAddress, blockChain, myWallet, meanTransactionInterDuration, meanTransactionAmount, listenQForValidatedBlocksFromNetwDispatcher):
@@ -35,7 +30,7 @@ class CmpECoinSimpleNode():
     def joinCmpECoinNetw(self):
         connection = pika.BlockingConnection(self.parameters)
         # Send self public key to dispatcher after connection is made.
-        self.sendPublicKeyToDispatcher(connection, pk_N)
+        self.sendPublicKeyToDispatcher(connection, self.myWallet.getPublicKey())
         # Listen new simple nodes
         listenNewJoiningSimpleNodes = Thread(target=self.listenNewJoiningSimpleNodes)
         # Listen for new transactions (from 3rd party to self simple node) (for test/demo purposes)
