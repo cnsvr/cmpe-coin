@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
+from ecdsa import SigningKey, VerifyingKey
+import ecdsa
 
 class CmpECoinWallet:
 
@@ -11,8 +10,8 @@ class CmpECoinWallet:
 
 	def initWallet(self):
 		self.currentBalance = 0
-		self.privateKey = rsa.generate_private_key(public_exponent=65537,key_size=2048,backend=default_backend())
-		self.publicKey = private_key.public_key()
+		self.privateKey = SigningKey.generate(curve=ecdsa.SECP256k1)
+		self.publicKey = self.privateKey.verifying_key
 
 	def getPublicKey(self):
 		return self.publicKey

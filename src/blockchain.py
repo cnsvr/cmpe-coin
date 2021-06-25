@@ -19,6 +19,7 @@ class CmpEBlockchain:
             initialTransaction = CmpETransaction(None, address, INITIAL_AMOUNT)
             transactions.append(initialTransaction)
         genesisBlock = CmpEBlock(0, transactions, None)
+        self.chain.append(genesisBlock)
         return genesisBlock
       
 

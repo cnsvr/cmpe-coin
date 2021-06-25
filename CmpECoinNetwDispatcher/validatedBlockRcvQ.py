@@ -8,7 +8,8 @@ class validatedBlockRcvQ(threading.Thread):
 
     def run(self):
         try:
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+            parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
+            connection = pika.BlockingConnection(parameters)
             channel = connection.channel()
 
             channel.queue_declare(queue='blocks')
