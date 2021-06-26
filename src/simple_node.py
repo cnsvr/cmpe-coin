@@ -53,7 +53,7 @@ class CmpECoinSimpleNode():
         listenNewJoiningSimpleNodes.start()
         listenNewValidatedBlocks.start()
         listenNewTransactionAndSendDistpatcher.start()
-        doRandomInvalidTransaction.start()
+        #doRandomInvalidTransaction.start()
         doRandomTransactions.start()
 
     def sendPublicKeyToDispatcher(self, connection, public_key):
@@ -114,7 +114,7 @@ class CmpECoinSimpleNode():
         return block
 
     def parseBlock(self, body):
-        blockJson = json.loads(body)
+        blockJson = json.loads(body.decode())
         transactions = []
 
         for transactionT in blockJson["transactions"]:
@@ -123,6 +123,10 @@ class CmpECoinSimpleNode():
             toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
             transaction = CmpETransaction(fromAddress, toAddress,
                                           transactionJson["amount"])
+            transaction.timestamp = transactionJson["timestamp"]
+            transaction.hash = transactionJson["hash"]
+            transaction.signature = bytes.fromhex(transactionJson["signature"]) if transactionJson["signature"] else None
+
             transactions.append(transaction)
 
         return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
@@ -269,6 +273,7 @@ class CmpECoinSimpleNode():
         channel.start_consuming()
 
     def handleReceivedTransaction(self, channel, method, properties, body):
+        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received transaction')
         transaction = self.parseAndCreateTransaction(body)        
         if transaction:
             # send to transaction to dispatcher
@@ -277,6 +282,7 @@ class CmpECoinSimpleNode():
             # send the json to node.
             self.sendTransactionToDispatcher(transaction_json)
             return True
+        print("Not a valid transaction!")
         return False
 
     def parseAndCreateTransaction(self, payload):

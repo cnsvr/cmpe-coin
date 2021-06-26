@@ -66,21 +66,32 @@ try:
     coin = CmpECoinSimpleNode(wallet, meanTransactionInterDuration, meanTransactionAmount,  PKsInNetwork)
 
     
-
+    x = coin.blockChain.getBalanceOf(vk)
     
     table = Table()
     table.add_column("Node")
     table.add_column("Wallet")
-    table.add_row(f"{sys.argv[1]}", f" {coin.blockChain.getBalanceOf(vk)}")
+    table.add_row(f"{sys.argv[1]}", f" {x}")
     p= Panel(table)
+
+
+    def generate_table() -> Table:
+        global coin
+        table = Table()
+        table.add_column("Node")
+        table.add_column("Wallet")
+        x = coin.blockChain.getBalanceOf(vk)
+        table.add_row(f"{sys.argv[1]}", f" {x}")
+        return table
 
     """layout = make_layout()
     layout["lower"].update(Header())"""
 
-    with Live(p, console=console,  redirect_stderr=True) as live:
+    with Live(generate_table(), console=console,  redirect_stderr=True, transient=True) as live:
         try:
             while True:
                 time.sleep(1)
+                live.update(generate_table())
         except KeyboardInterrupt:
             pass
 

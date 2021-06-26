@@ -5,6 +5,8 @@ import random
 import math
 import sys
 import json
+import time
+from datetime import datetime
 
 class CmpEBlock():
     def __init__(self, index, transactions, prevBlockHash, proofOfWork=0, timestamp=time.time()):
@@ -16,6 +18,7 @@ class CmpEBlock():
         self.currBlockHash = self.calculateCurrBlockHash()
 
     def validateBlock(self, difficulty):
+        startTime = datetime.now()
         iter_count = 0
         calculatedHash = self.currBlockHash
         while not calculatedHash.startswith("0" * int(difficulty)):

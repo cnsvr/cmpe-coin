@@ -31,7 +31,7 @@ class CmpECoinNetwDispatcher():
         channel.exchange_declare(exchange=os.getenv("BLOCK_EXCHANGE"), exchange_type='fanout')
         body = self.blockchain.chain[0].toJSON()
         channel.basic_publish(exchange= os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
-        print(" [x] Forwarded the genesis block to all nodes %r")
+        print(" [x] Forwarded the genesis block to all nodes ")
 
         transactionThread = Thread(target=self.listenForTransactions)
         validatedBlocksThread = Thread(target=self.listenForValidatedBlocks)
@@ -40,21 +40,34 @@ class CmpECoinNetwDispatcher():
         validatedBlocksThread.start()
         sendValidateBeacon.start()
 
+    def sendTransx(selfi,transx):
+        parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
+        connection = pika.BlockingConnection(parameters)
+        channel = connection.channel()
+        channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
+        channel.basic_publish(exchange=os.getenv("TRANSX_EXCHANGE"), routing_key='', body=transx)
+        print(" [x] Forwarded the transaction to all validator blocks")
+        return True
+
     def listenForTransactions(self):
         parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
 
         channel.queue_declare(queue='newTransx')
-
+        #channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
     
         def callback(ch, method, properties, body):
             print(" [x] Received a new transaction")
             ch.basic_ack(delivery_tag=method.delivery_tag)
-            channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
 
-            channel.basic_publish(exchange=os.getenv("TRANSX_EXCHANGE"), routing_key='', body=body)
-            print(" [x] Forwarded the transaction to all validator blocks")
+            th = Thread(target = self.sendTransx, args=(body,))
+            th.start()
+            th.join()
+            #channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
+
+            """channel.basic_publish(exchange=os.getenv("TRANSX_EXCHANGE"), routing_key='', body=body)
+            print(" [x] Forwarded the transaction to all validator blocks")"""
 
         channel.basic_consume(queue='newTransx', on_message_callback=callback)
 
@@ -81,7 +94,7 @@ class CmpECoinNetwDispatcher():
             if self.blockchain.isChainValid():
                 self.blockchainMutex.release()
                 channel.basic_publish(exchange=os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
-                print(" [x] Forwarded the validated block to all nodes %r" % body)
+                print(" [x] Forwarded the validated block to all nodes " )
             else:    
                 self.blockchain.chain.pop()
                 print(
@@ -114,7 +127,6 @@ class CmpECoinNetwDispatcher():
         transactions = []
 
         for transactionT in blockJson["transactions"]:
-            print(transactionT)
             transactionJson = json.loads(transactionT)
             fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
             toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)

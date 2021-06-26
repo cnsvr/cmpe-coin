@@ -108,10 +108,11 @@ class CmpEBlockchain:
             return True
         return False
 
-    def validatePendingTransactions(self, rewardAddress):
+    def validatePendingTransactions(self, rewardAddress, prevHash, tempList):
 
-        self.toBeValidated.append(CmpETransaction(None, rewardAddress, self.validationReward))
-        newBlock = CmpEBlock(0, self.toBeValidated, self.chain[len(self.chain) - 1].calculateCurrBlockHash())
+        tempList.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        
+        newBlock = CmpEBlock(0, tempList, prevHash)
 
         newBlock.validateBlock(self.difficulty)
         self.toBeValidated = []
