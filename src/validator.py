@@ -179,7 +179,8 @@ class CmpECoinValidatorNode():
         return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
 
     def parseTransaction(self, body):
-        transactionJson = json.loads(body)
+        dec = body.decode()
+        transactionJson = json.loads(dec)
         fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
         toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
-        return CmpETransaction(fromAddress, toAddress, transactionJson["amount"])
+        return CmpETransaction(fromAddress, toAddress, transactionJson["amount"], transactionJson["signature"], transactionJson["timestamp"])

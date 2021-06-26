@@ -12,7 +12,7 @@ MAX_REWARD = 50 # CmpECoin
 #coloredlogs.install()
 
 class CmpETransaction:  
-  def __init__(self, fromAddress, toAddress, amount, log = True):
+  def __init__(self, fromAddress, toAddress, amount, signature=None, timestamp = None, log = True):
 
     # If the fromAddress is null, it is called a reward transaction and amount can't be greater than MAX_REWARD CmpECoin.
     if fromAddress == None and amount > MAX_REWARD:
@@ -30,9 +30,9 @@ class CmpETransaction:
     self.fromAddress = fromAddress
     self.toAddress = toAddress
     self.amount = amount
-    self.timestamp = time.time()
+    self.timestamp = time.time() if not timestamp else timestamp
     self.hash = self.__calculateTransactionHash()
-    self.signature = None
+    self.signature = bytes(signature,'utf-8') if signature else None
     if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
@@ -41,7 +41,7 @@ class CmpETransaction:
                                                                                        datetime.fromtimestamp(self.timestamp)))
   
   def __calculateTransactionHash(self):
-    string_block = "{}{}{}{}".format(self.fromAddress, self.toAddress, self.amount, self.timestamp)
+    string_block = "{}{}{}{}".format(self.fromAddress.to_string().hex() if self.fromAddress else None , self.toAddress.to_string().hex(), self.amount, self.timestamp)
     return hashlib.sha256(string_block.encode()).hexdigest()
 
   def signTransaction(self, secretKey):
@@ -73,10 +73,11 @@ class CmpETransaction:
 
   def toJSON(self):
     t = {}
-    t['fromAddress'] = self.fromAddress.to_string().hex() if self.fromAddress else None
-    t['toAddress'] = self.toAddress.to_string().hex()
+    t['fromAddress'] = str(self.fromAddress.to_string().hex()) if self.fromAddress else None
+    t['toAddress'] = str(self.toAddress.to_string().hex())
     t['amount'] = self.amount
     t['timestamp'] = self.timestamp
-    t['hash'] = self.hash
-    t['signature'] = self.signature.hex() if self.signature else None
-    return json.dumps(t, default=lambda o: o.__dict__, indent=4)
+    t['hash'] = str(self.hash)
+    t['signature'] = str(self.signature.hex()) if self.signature else None
+    a = json.dumps(t, default=lambda o: o.__dict__, indent=4)
+    return a

@@ -181,7 +181,7 @@ class CmpECoinSimpleNode():
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an valid transaction with hash {transaction.hash}.')
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an valid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:
@@ -216,7 +216,7 @@ class CmpECoinSimpleNode():
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an invalid transaction with hash {transaction.hash}.')
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an invalid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:

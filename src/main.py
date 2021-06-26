@@ -17,8 +17,8 @@ def startValidator():
   CmpECoinValidatorNode()
 
 if __name__ == "__main__":
-  simpleCount = 3
-  validatorCount = 3
+  simpleCount = 2
+  validatorCount = 1
 
   simpleAddressesPublic = []
   simpleAddressesPrivate = []
