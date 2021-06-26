@@ -58,7 +58,7 @@ class CmpEBlock():
         json_block['index'] = self.index
         json_block['timestamp'] = self.timestamp
         json_block['transactions'] = self.convertTransactionsToJSON()
-        json_block['prevBlockHash'] = self.prevBlockHash
+        json_block['prevBlockHash'] = self.prevBlockHash if self.prevBlockHash else None
         json_block['proofOfWork'] = self.proofOfWork
         json_block['currBlockHash'] = self.currBlockHash
         return json.dumps(json_block, default=lambda o: o.__dict__, indent=4)

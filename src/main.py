@@ -5,8 +5,9 @@ from validator import CmpECoinValidatorNode
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 from CmpECoinWallet import CmpECoinWallet
 from threading import Thread 
-meanTransactionInterDuration = 15
-meanTransactionAmount = 50
+import time
+meanTransactionInterDuration = 30
+meanTransactionAmount = 10
 
 def startSimple(wallet, PKsInNetwork):
   netwDispatcherAddress = 'localhost:5672'
@@ -41,5 +42,7 @@ if __name__ == "__main__":
   for i in range(validatorCount):
     vNode = Thread(target=startValidator)
     vNode.start()
+
+  time.sleep(3)
 
   dispatcherNode.run()

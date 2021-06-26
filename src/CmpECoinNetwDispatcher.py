@@ -35,8 +35,10 @@ class CmpECoinNetwDispatcher():
 
         transactionThread = Thread(target=self.listenForTransactions)
         validatedBlocksThread = Thread(target=self.listenForValidatedBlocks)
+        sendValidateBeacon = Thread(target = self.sendValidateBeacon)
         transactionThread.start()
         validatedBlocksThread.start()
+        sendValidateBeacon.start()
 
     def listenForTransactions(self):
         parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
@@ -45,14 +47,14 @@ class CmpECoinNetwDispatcher():
 
         channel.queue_declare(queue='newTransx')
 
-        channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
-
+    
         def callback(ch, method, properties, body):
-            print(" [x] Received a new transaction, whose hash is %r" % body)
+            print(" [x] Received a new transaction")
             ch.basic_ack(delivery_tag=method.delivery_tag)
-            
+            channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
+
             channel.basic_publish(exchange=os.getenv("TRANSX_EXCHANGE"), routing_key='', body=body)
-            print(" [x] Forwarded the transaction to all validator blocks, %r" % body)
+            print(" [x] Forwarded the transaction to all validator blocks")
 
         channel.basic_consume(queue='newTransx', on_message_callback=callback)
 
@@ -70,29 +72,32 @@ class CmpECoinNetwDispatcher():
 
         def callback(ch, method, properties, body):
             block = self.parseBlock(body)
-            print(" [x] Received a validated block, whose hash is %r" % body.calculateCurrBlockHash())
+            print(" [x] Received a validated block")
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
             block = self.parseBlock(body)
             self.blockchainMutex.acquire()
-            self.blockchain.append(block)
+            self.blockchain.chain.append(block)
             if self.blockchain.isChainValid():
-                logging.info(f'Dispatcher Node {self.wallet.getPublicKey()} added a validated block to its blockchain.')
+                st = ""
+                for transaction in self.blockchain.chain:
+                    st = st + " , " + transaction.hash
+                print(f'[x] Added a validated block to its blockchain with hashes {st}')
                 self.blockchainMutex.release()
                 channel.basic_publish(exchange=os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
                 print(" [x] Forwarded the validated block to all nodes %r" % body)
             else:    
-                self.blockchain.pop()
-                logging.info(
-                    f'Dispatcher Node {self.wallet.getPublicKey()} received an invalid block, did not add to its blockchain.')
+                self.blockchain.chain.pop()
+                print(
+                    f'[x] received an invalid block, did not add to its blockchain.')
                 self.blockchainMutex.release()
 
         channel.basic_consume(queue=os.getenv("VALIDATED_TO_DISP"), on_message_callback=callback)
 
-        print(' [*] Waiting for validated blocks. To exit press CTRL+C')
+        print(' [*] Waiting for validated blocks.')
         channel.start_consuming()
 
-    def sendValidateVeacon(self):
+    def sendValidateBeacon(self):
         parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
@@ -103,8 +108,8 @@ class CmpECoinNetwDispatcher():
         channel.queue_bind(exchange = os.getenv("VALIDATION_BEACON"), queue=queue_name)
 
         while True:
-            print("Sending Validation Beacon")
-            time.sleep(5)
+            print("[x] Sent beacon for validated blocks.")
+            time.sleep(10)
             channel.basic_publish(exchange=os.getenv("VALIDATION_BEACON"), routing_key='', body="validate")
             
 
@@ -120,5 +125,5 @@ class CmpECoinNetwDispatcher():
                                           transactionJson["amount"])
             transactions.append(transaction)
 
-        return CmpEBlock(None, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
+        return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
 

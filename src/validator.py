@@ -94,11 +94,11 @@ class CmpECoinValidatorNode():
         transaction = self.parseTransaction(body)
         self.blockchainMutex.acquire()
         if self.blockchain.addTransactionToPendingList(transaction):
-            logging.info(
-                f'Validator Node {self.wallet.getPublicKey().to_string().hex()} added a valid transaction to its pending transactions.')
+            print(
+                f'Validator Node {self.wallet.getPublicKey().to_string().hex()[0:10]}: added a valid transaction to its pending transactions.')
             self.blockchainMutex.release()
             return True
-        logging.info(f'Validator Node {self.wallet.getPublicKey().to_string().hex()} received an invalid transaction.')
+        print(f'Validator Node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received an invalid transaction with hash {transaction.hash}')
         self.blockchainMutex.release()
         return False
 
@@ -110,7 +110,7 @@ class CmpECoinValidatorNode():
         self.blockchainMutex.acquire()
         self.blockchain.chain.append(block)
         if self.blockchain.isChainValid():
-            logging.info(f'Validator Node {self.wallet.getPublicKey().to_string().hex()} added a validated block to its blockchain.')
+            print(f'Validator Node {self.wallet.getPublicKey().to_string().hex()[0:10]}: added a validated block to its blockchain.')
             block.transactions.sort(key=lambda x: x.timestamp, reverse=True)
             lastTimestamp = block.transactions[0].timestamp
             for transaction in self.blockchain.pendingTransactions:
@@ -118,25 +118,25 @@ class CmpECoinValidatorNode():
                     self.blockchain.pendingTransactions.remove(transaction)
             self.blockchainMutex.release()
             return True
-        self.blockchain.pop()
-        logging.info(
-            f'Validator Node {self.wallet.getPublicKey().to_string().hex()} received an invalid block, did not add to its blockchain.')
+        self.blockchain.chain.pop()
+        print(
+            f'Validator Node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received an invalid block, did not add to its blockchain.')
         self.blockchainMutex.release()
         return False
 
     def handleBeaconAndStartValidationProc(self, channel, method, properties, body):
         message = self.parseBody(body)
-        
         self.blockchainMutex.acquire()
         isValid, walletDict = self.blockchain.isChainValid(True)
         if not isValid:
-            logging.info(
-            f'Validator Node {self.wallet.getPublicKey().to_string().hex()} has a non-valid blockchain.')
+            #logging.info(
+            #f'Validator Node {self.wallet.getPublicKey().to_string().hex()} has a non-valid blockchain.')
             return False
         for transaction in self.blockchain.pendingTransactions:
             # Can not have reward on non-validated 
             if transaction.fromAddress == None:
                 self.blockchain.pendingTransactions.remove(transaction)
+                continue
             currentWallet = walletDict.get(transaction.fromAddress, 0)
             if transaction.amount > currentWallet:
                 self.blockchain.pendingTransactions.remove(transaction)
@@ -147,12 +147,13 @@ class CmpECoinValidatorNode():
         self.blockchain.toBeValidated = self.blockchain.pendingTransactions
         self.blockchain.pendingTransactions = []
         self.blockchainMutex.release()
-        newBlock = self.blockchain.validatePendingTransactions(self.wallet.getPublicKey().to_string().hex())
+        newBlock = self.blockchain.validatePendingTransactions(self.wallet.getPublicKey())
         # TODO: Open thread and send block to dispatcher
-        sendBlockToDispatcher = Thread(target=self.sendValidatedBlock, args=(newBlock.json(),))
+        sendBlockToDispatcher = Thread(target=self.sendValidatedBlock, args=(newBlock.toJSON(),))
+        sendBlockToDispatcher.start()
 
     def sendValidatedBlock(self, blockJson):
-
+        print(f'Validator Node {self.wallet.getPublicKey().to_string().hex()[0:10]}: found an proof of work.')
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
         channel.queue_declare(queue = os.getenv("VALIDATED_TO_DISP"))
@@ -175,8 +176,10 @@ class CmpECoinValidatorNode():
                                           transactionJson["amount"])
             transactions.append(transaction)
 
-        return CmpEBlock(None, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
+        return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
 
     def parseTransaction(self, body):
-        transactionJson = json.load(body)
-        return CmpETransaction(transactionJson.fromAddress, transactionJson.toAddress, transactionJson.amount)
+        transactionJson = json.loads(body)
+        fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
+        toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
+        return CmpETransaction(fromAddress, toAddress, transactionJson["amount"])
