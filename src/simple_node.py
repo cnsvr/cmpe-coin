@@ -55,7 +55,7 @@ class CmpECoinSimpleNode():
         listenNewJoiningSimpleNodes.start()
         listenNewValidatedBlocks.start()
         listenNewTransactionAndSendDistpatcher.start()
-        #doRandomInvalidTransaction.start()
+        doRandomInvalidTransaction.start()
         doRandomTransactions.start()
 
     def sendPublicKeyToDispatcher(self, connection, public_key):
@@ -290,12 +290,13 @@ class CmpECoinSimpleNode():
     def parseAndCreateTransaction(self, payload):
         body = json.loads(payload)
         transaction = None
-        
-        if body['fromAddress'] == self.wallet.getPublicKey().to_string().hex():
+        try: 
             fromAddress = VerifyingKey.from_string(bytes.fromhex(body['fromAddress']), curve=SECP256k1)
             toAddress = VerifyingKey.from_string(bytes.fromhex(body['toAddress']), curve=SECP256k1)
             amount = body['amount']
             transaction = CmpETransaction(fromAddress, toAddress, amount, False)
             transaction.signTransaction(self.wallet.getPrivateKey())
-
-        return transaction
+            return transaction
+        except:
+            print("Input format is not correct!")
+            return transaction

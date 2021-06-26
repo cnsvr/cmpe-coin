@@ -18,7 +18,6 @@ class CmpEBlock():
         self.currBlockHash = self.calculateCurrBlockHash()
 
     def validateBlock(self, difficulty):
-        startTime = datetime.now()
         iter_count = 0
         calculatedHash = self.currBlockHash
         while not calculatedHash.startswith("0" * int(difficulty)):

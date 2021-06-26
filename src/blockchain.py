@@ -51,7 +51,7 @@ class CmpEBlockchain:
         while index < len(self.chain):
             lastBlock = self.chain[index]
 
-            lastBlockHash = lastBlock.calculateCurrBlockHash()
+            lastBlockHash = lastBlock.currBlockHash
 
             if not lastBlock.hasValidTransactions():
                 logging.info("Chain has nonvalid transactions.")
@@ -66,7 +66,7 @@ class CmpEBlockchain:
 
             prevBlock = self.chain[index - 1]
 
-            if lastBlock.prevBlockHash != prevBlock.calculateCurrBlockHash():
+            if lastBlock.prevBlockHash != prevBlock.currBlockHash:
                 logging.info("Chain is not properly linked.")
                 if returnWallet:
                     return False, dict()

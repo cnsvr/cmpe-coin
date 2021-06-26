@@ -18,7 +18,7 @@ def startValidator():
 
 if __name__ == "__main__":
   simpleCount = 2
-  validatorCount = 1
+  validatorCount = 2
 
   simpleAddressesPublic = []
   simpleAddressesPrivate = []

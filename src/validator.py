@@ -158,7 +158,7 @@ class CmpECoinValidatorNode():
         for tr in self.blockchain.pendingTransactions:
             tempList.append(tr) 
         #self.blockchain.pendingTransactions = []
-        prevHash = self.blockchain.chain[len(self.blockchain.chain) - 1].calculateCurrBlockHash()
+        prevHash = self.blockchain.chain[len(self.blockchain.chain) - 1].currBlockHash
         self.blockchainMutex.release()
         newBlock = self.blockchain.validatePendingTransactions(self.wallet.getPublicKey(), prevHash, tempList)
         if newBlock == False:
