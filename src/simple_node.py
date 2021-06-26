@@ -9,16 +9,16 @@ import json
 from time import sleep
 import binascii
 from transaction import CmpETransaction
+
 from CmpECoinWallet import CmpECoinWallet
 from blockchain import CmpEBlockchain
+
 from ecdsa import SigningKey, SECP256k1, VerifyingKey
 import os
 import ecdsa
 from dotenv import load_dotenv
 
 load_dotenv()
-
-logging.getLogger("pika").setLevel(logging.WARNING)
 
 class CmpECoinSimpleNode():
     def __init__(self, wallet, meanTransactionInterDuration, meanTransactionAmount, PKsInNetwork = []):
@@ -39,7 +39,9 @@ class CmpECoinSimpleNode():
     def joinCmpECoinNetw(self):
         connection = pika.BlockingConnection(self.parameters)
         # Send self public key to dispatcher after connection is made.
+
         self.sendPublicKeyToDispatcher(connection, self.wallet.getPublicKey())
+
         # Listen new simple nodes
         listenNewJoiningSimpleNodes = Thread(target=self.listenNewJoiningSimpleNodes)
         # Listen for new transactions (from 3rd party to self simple node) (for test/demo purposes)
