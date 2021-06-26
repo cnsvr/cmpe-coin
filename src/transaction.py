@@ -1,18 +1,19 @@
 from datetime import datetime
 import time
-import logging, coloredlogs
+import logging
 import hashlib
 import json
 from ecdsa import SigningKey, VerifyingKey
+from ecdsa.util import sigencode_string, sigdecode_string
 
-MAX_REWARD = 1 # CmpECoin
+MAX_REWARD = 50 # CmpECoin
 
 # export COLOREDLOGS_LEVEL_STYLES='info=35;error=124'
 
-coloredlogs.install()
+#coloredlogs.install()
 
 class CmpETransaction:  
-  def __init__(self, fromAddress, toAddress, amount, log = True):
+  def __init__(self, fromAddress, toAddress, amount, signature=None, timestamp = None, log = True):
 
     # If the fromAddress is null, it is called a reward transaction and amount can't be greater than MAX_REWARD CmpECoin.
     if fromAddress == None and amount > MAX_REWARD:
@@ -30,9 +31,9 @@ class CmpETransaction:
     self.fromAddress = fromAddress
     self.toAddress = toAddress
     self.amount = amount
-    self.timestamp = time.time()
+    self.timestamp = time.time() if not timestamp else timestamp
     self.hash = self.__calculateTransactionHash()
-    self.signature = None
+    self.signature = signature
     if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
@@ -41,12 +42,12 @@ class CmpETransaction:
                                                                                        datetime.fromtimestamp(self.timestamp)))
   
   def __calculateTransactionHash(self):
-    string_block = "{}{}{}{}".format(self.fromAddress, self.toAddress, self.amount, self.timestamp)
+    string_block = "{}{}{}{}".format(self.fromAddress.to_string().hex() if self.fromAddress else None , self.toAddress.to_string().hex(), self.amount, self.timestamp)
     return hashlib.sha256(string_block.encode()).hexdigest()
 
   def signTransaction(self, secretKey):
     if not isinstance(secretKey, SigningKey):
-      logging.error("Secret Key is not instance of SigningKey. You can't sign the transaction")
+      logging.info("Secret Key is not instance of SigningKey. You can't sign the transaction")
       return False
     else:
       self.signature = secretKey.sign(self.hash.encode('utf-8'))
@@ -54,7 +55,7 @@ class CmpETransaction:
 
   def isTransactionValid(self):
     isTransactionValid = True
-    # If the fromAddress is None, no need to signature
+    # If the fromAddress is None, no need to signature
     if not self.fromAddress:
       return isTransactionValid
     else:
@@ -65,7 +66,7 @@ class CmpETransaction:
       except:
         # add log here
         isTransactionValid = False
-
+    
     return isTransactionValid
 
   def __repr__(self):
@@ -73,10 +74,10 @@ class CmpETransaction:
 
   def toJSON(self):
     t = {}
-    t['fromAddress'] = self.fromAddress.to_string().hex()
+    t['fromAddress'] = self.fromAddress.to_string().hex() if self.fromAddress else None
     t['toAddress'] = self.toAddress.to_string().hex()
     t['amount'] = self.amount
     t['timestamp'] = self.timestamp
     t['hash'] = self.hash
-    t['signature'] = self.signature.hex()
+    t['signature'] = self.signature.hex() if self.signature else None
     return json.dumps(t, default=lambda o: o.__dict__, indent=4)

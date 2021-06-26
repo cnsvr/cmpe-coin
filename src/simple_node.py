@@ -10,69 +10,88 @@ from time import sleep
 import binascii
 from transaction import CmpETransaction
 
+from CmpECoinWallet import CmpECoinWallet
+from blockchain import CmpEBlockchain
 
 from ecdsa import SigningKey, SECP256k1, VerifyingKey
+import os
+import ecdsa
+from dotenv import load_dotenv
 
-logging.getLogger("pika").setLevel(logging.WARNING)
+load_dotenv()
 
 class CmpECoinSimpleNode():
-    def __init__(self, netwDispatcherAddress, blockChain, myWallet, meanTransactionInterDuration, meanTransactionAmount, listenQForValidatedBlocksFromNetwDispatcher):
-        self.netwDisptcherAddress = netwDispatcherAddress
+    def __init__(self, wallet, meanTransactionInterDuration, meanTransactionAmount, PKsInNetwork = []):
+        print("Simple Node Initialized")
         self.blockChainMutex = Lock()
-        self.blockChain = blockChain
-        self.myWallet = myWallet
-        self.PKsInNetwork = []
+        self.blockChain = CmpEBlockchain([])
+        self.wallet = wallet
+        self.PKsInNetwork = PKsInNetwork.copy()
+        self.PKsInNetwork.remove(self.wallet.getPublicKey())
         self.meanTransactionInterDuration = meanTransactionInterDuration
         self.meanTransactionAmount = meanTransactionAmount
-        self.listenQForValidatedBlocksFromNetwDispatcher = listenQForValidatedBlocksFromNetwDispatcher
-        self.parameters = pika.ConnectionParameters(host=self.netwDisptcherAddress)
+        self.parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
+        self.joinCmpECoinNetw()
+
+    
+
 
     def joinCmpECoinNetw(self):
         connection = pika.BlockingConnection(self.parameters)
         # Send self public key to dispatcher after connection is made.
-        self.sendPublicKeyToDispatcher(connection, self.myWallet.getPublicKey())
+
+        self.sendPublicKeyToDispatcher(connection, self.wallet.getPublicKey())
+
         # Listen new simple nodes
         listenNewJoiningSimpleNodes = Thread(target=self.listenNewJoiningSimpleNodes)
         # Listen for new transactions (from 3rd party to self simple node) (for test/demo purposes)
         listenNewTransactionAndSendDistpatcher = Thread(target=self.listenNewTransactionAndSendDistpatcher)
         # Listen for validated blocks
         listenNewValidatedBlocks = Thread(target=self.validatedBlockConsumer)
+        
+        doRandomInvalidTransaction = Thread(target = self.doRandomInvalidTransaction)
+        doRandomTransactions = Thread(target =self.doRandomTransactions)
 
         listenNewJoiningSimpleNodes.start()
         listenNewValidatedBlocks.start()
         listenNewTransactionAndSendDistpatcher.start()
+        doRandomInvalidTransaction.start()
+        doRandomTransactions.start()
 
     def sendPublicKeyToDispatcher(self, connection, public_key):
         channel = connection.channel()
-        channel.queue_declare(queue='publicKeyRcvQ')
-        channel.basic_publish(exchange='', routing_key='publicKeyRcvQ', body=public_key)
+        channel.queue_declare(queue=os.getenv("JOIN_QUEUE"))
+        #channel.queue_declare(queue='publicKeyRcvQ')
+        channel.basic_publish(exchange='', routing_key=os.getenv("JOIN_QUEUE"), body=public_key.to_string().hex())
 
-        print('Public key', public_key, ' is sent to:', self.netwDisptcherAddress)
+        print('Public key', public_key.to_string().hex(), ' is sent to dispatcher')
 
     def validatedBlockConsumer(self):
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
-        channel.exchange_declare(exchange='dispatcherNewValidatedBlock', exchange_type='fanout')
-        channel.queue_declare(queue='validatedBlock', exclusive=True)
-        channel.queue_bind(exchange='dispatcherNewValidatedBlock', queue='validatedBlock')
-        channel.basic_consume(queue='validatedBlock', on_message_callback=self.handleReceivedValidatedBlock, auto_ack=True)
+        channel.exchange_declare(exchange = os.getenv("BLOCK_EXCHANGE"), exchange_type='fanout')
+        queue_name = 'blocks'+self.wallet.getPublicKey().to_string().hex() 
+        channel.queue_declare(queue=queue_name, exclusive=True)
+        channel.queue_bind(exchange=os.getenv("BLOCK_EXCHANGE"), queue=queue_name)
+        channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedValidatedBlock, auto_ack=True)
 
         print('Starting listening for new validated blocks...')
         channel.start_consuming()
 
     def handleReceivedValidatedBlock(self, ch, method, properties, body):
+        print(f"Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Received a validated block.")
         # log the block received as stringified json
-        print('Received message # %s from %s: %s', method.delivery_tag, properties.app_id, body)
+        #print('Received message # %s from %s: %s', method.delivery_tag, properties.app_id, body)
         # handle the block received
-        body = self.convertJSONBlockToObject(body)
+        body = self.parseBlock(body)
         # acquire blockchain to update
         self.blockChainMutex.acquire()
-        self.blockChain.append(body)
+        self.blockChain.chain.append(body)
         if not self.blockChain.isChainValid():
-            print('Blockchain is not valid! Block is discarded...')
-            self.blockChain.pop()
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Blockchain is not valid! Block is discarded...')
+            self.blockChain.chain.pop()
         else:
-            print('Blockchain is valid, block is added to the blockchain.')
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Blockchain is valid, block is added to the blockchain.')
         # release blockchain
         self.blockChainMutex.release()
     
@@ -95,6 +114,20 @@ class CmpECoinSimpleNode():
         # Validation check for block, logging purposes
         print('Created Block Hash == Received Block Hash? ---->', (block.currBlockHash == body['currBlockHash']))
         return block
+
+    def parseBlock(self, body):
+        blockJson = json.loads(body)
+        transactions = []
+
+        for transactionT in blockJson["transactions"]:
+            transactionJson = json.loads(transactionT)
+            fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
+            toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
+            transaction = CmpETransaction(fromAddress, toAddress,
+                                          transactionJson["amount"])
+            transactions.append(transaction)
+
+        return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
 
     def doRandomTransactions(self):
         # make a new thread and create random transaction and join thread to main thread.
@@ -127,9 +160,11 @@ class CmpECoinSimpleNode():
     def newValidTransaction(self):
         # Get the my current balance from blockchain.
         self.blockChainMutex.acquire()
-        my_current_balance = self.blockChain.getBalance(self.myWallet.getPublicKey())
+        my_current_balance = self.blockChain.getBalanceOf(self.wallet.getPublicKey())
         self.blockChainMutex.release()
-        self.myWallet.setCurrentBalance(my_current_balance)
+        self.wallet.setCurrentBalance(my_current_balance)
+        if my_current_balance == 0:
+            return True
         amount = np.random.exponential(self.meanTransactionAmount)
 
         # Find enough amount for valid transaction
@@ -137,27 +172,28 @@ class CmpECoinSimpleNode():
             amount = np.random.exponential(self.meanTransactionAmount)
         
         random_pk = random.choice(self.PKsInNetwork)
-        transaction = CmpETransaction(self.myWallet.getPublicKey(), random_pk, amount)
+        transaction = CmpETransaction(self.wallet.getPublicKey(), random_pk, amount)
 
         # Sign the transaction before sending it to the node.
-        if transaction.signTransaction(self.myWallet.getPrivateKey()):
+        if transaction.signTransaction(self.wallet.getPrivateKey()):
             # Transaction is valid
-            self.myWallet.setCurrentBalance(self.myWallet.getCurrentBalance() -  amount)
+            self.wallet.setCurrentBalance(self.wallet.getCurrentBalance() -  amount)
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an valid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:
             return False
 
     def newInvalidTransaction(self):
-        # Get the my current balance from blockchain.
+    # Get the my current balance from blockchain.
         self.blockChainMutex.acquire()
-        my_current_balance = self.blockChain.getBalance(self.myWallet.getPublicKey())
+        my_current_balance = self.blockChain.getBalanceOf(self.wallet.getPublicKey())
         self.blockChainMutex.release()
 
-        self.myWallet.setCurrentBalance(my_current_balance)
+        self.wallet.setCurrentBalance(my_current_balance)
         amount = np.random.exponential(self.meanTransactionAmount)
 
         # Find enough amount for valid transaction
@@ -165,12 +201,12 @@ class CmpECoinSimpleNode():
             amount = np.random.exponential(self.meanTransactionAmount)
         
         random_pk = random.choice(self.PKsInNetwork)
-        transaction = CmpETransaction(self.myWallet.getPublicKey(), random_pk, amount)
+        transaction = CmpETransaction(self.wallet.getPublicKey(), random_pk, amount)
 
         # Sign the transaction before sending it to the node.
-        if transaction.signTransaction(self.myWallet.getPrivateKey()):
+        if transaction.signTransaction(self.wallet.getPrivateKey()):
             # Transaction is valid
-            self.myWallet.setCurrentBalance(self.myWallet.getCurrentBalance() -  amount)
+            self.wallet.setCurrentBalance(self.wallet.getCurrentBalance() -  amount)
 
             # Change amount and timestamp of transaction to make invalid.
 
@@ -180,17 +216,20 @@ class CmpECoinSimpleNode():
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
+            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an invalid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:
             return False
+
+
     
     def sendTransactionToDispatcher(self, transaction_json):
         connection = pika.BlockingConnection(self.parameters)      
         channel = connection.channel()
-        channel.queue_declare(queue='transxRcvQ')
+        channel.queue_declare(queue='newTransx')
         channel.basic_publish(exchange='',
-                      routing_key='transxRcvQ',
+                      routing_key='newTransx',
                       body=transaction_json)
 
     # Create a connection and listen transaction from this node, create a transaction and send to dispatcher ??
@@ -200,9 +239,10 @@ class CmpECoinSimpleNode():
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
         channel.exchange_declare(exchange='dispatcherNewSimpleNode', exchange_type='fanout')
-        channel.queue_declare(queue='simpleNode', exclusive=True)
-        channel.queue_bind(exchange='dispatcherNewSimpleNode', queue='simpleNode')
-        channel.basic_consume(queue='simpleNode', on_message_callback=self.handleReceivedSimpleNode, auto_ack=True)
+        queue_name = 'simpleNode' + self.wallet.getPublicKey().to_string().hex() 
+        channel.queue_declare(queue=queue_name, exclusive=True)
+        channel.queue_bind(exchange='dispatcherNewSimpleNode', queue=queue_name)
+        channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedSimpleNode, auto_ack=True)
 
         print('Starting to listen for new joining simple nodes...')
         channel.start_consuming()
@@ -212,7 +252,7 @@ class CmpECoinSimpleNode():
         type = response['type']
         pk = response['pk']
         
-        if type == 0 and pk != self.myWallet.getPublicKey(): # it means type 0 belongs to simple node.
+        if type == 0 and pk != self.wallet.getPublicKey().to_string().hex() : # it means type 0 belongs to simple node.
             self.PKsInNetwork.append(pk)
             return True
         return False
@@ -220,12 +260,14 @@ class CmpECoinSimpleNode():
     def listenNewTransactionAndSendDistpatcher(self):
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
-        channel.exchange_declare(exchange='dispatcherNewTransaction', exchange_type='fanout')
-        channel.queue_declare(queue='transaction', exclusive=True)
-        channel.queue_bind(exchange='dispatcherNewTransaction', queue='transaction')
-        channel.basic_consume(queue='transaction', on_message_callback=self.handleReceivedTransaction, auto_ack=True)
-        
-        print('Starting to listen for transactions from third party users (for test/demo purposes)... ')
+        #channel.exchange_declare(exchange='dispatcherNewTransaction', exchange_type='fanout')
+        queue_name = 'transaction'+self.wallet.getPublicKey().to_string().hex() 
+        channel.queue_declare(queue=queue_name, exclusive=True)
+        #channel.queue_bind(exchange='dispatcherNewTransaction', queue='transaction')
+        channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedTransaction, auto_ack=True)
+        #channel.basic_consume(queue='transaction', on_message_callback=self.handleReceivedTransaction, auto_ack=True)
+        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Starting to listen for transactions from third party users (for test/demo purposes)...')
+        #print('Starting to listen for transactions from third party users (for test/demo purposes)... ')
         channel.start_consuming()
 
     def handleReceivedTransaction(self, channel, method, properties, body):
@@ -243,11 +285,11 @@ class CmpECoinSimpleNode():
         body = json.loads(payload)
         transaction = None
         
-        if body['fromAddress'] == self.myWallet.getPublicKey().to_string().hex():
+        if body['fromAddress'] == self.wallet.getPublicKey().to_string().hex():
             fromAddress = VerifyingKey.from_string(bytes.fromhex(body['fromAddress']), curve=SECP256k1)
             toAddress = VerifyingKey.from_string(bytes.fromhex(body['toAddress']), curve=SECP256k1)
             amount = body['amount']
             transaction = CmpETransaction(fromAddress, toAddress, amount, False)
-            transaction.signTransaction(self.myWallet.getPrivateKey())
+            transaction.signTransaction(self.wallet.getPrivateKey())
 
         return transaction
