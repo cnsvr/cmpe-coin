@@ -23,7 +23,7 @@ class CmpEBlock():
             self.proofOfWork = random.randint(0, sys.maxsize * 2 + 1)
             calculatedHash = self.calculateCurrBlockHash()
         
-        print('iteration count:', iter_count)
+        print('iteration count:', iter_count,'block Hash: ',calculatedHash)
         self.currBlockHash = calculatedHash
         return self.proofOfWork, calculatedHash
 

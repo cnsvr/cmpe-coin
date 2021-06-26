@@ -4,6 +4,7 @@ import logging
 import hashlib
 import json
 from ecdsa import SigningKey, VerifyingKey
+from ecdsa.util import sigencode_string, sigdecode_string
 
 MAX_REWARD = 50 # CmpECoin
 
@@ -32,7 +33,7 @@ class CmpETransaction:
     self.amount = amount
     self.timestamp = time.time() if not timestamp else timestamp
     self.hash = self.__calculateTransactionHash()
-    self.signature = bytes(signature,'utf-8') if signature else None
+    self.signature = signature.encode('unicode_escape') if signature else None
     if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
@@ -54,7 +55,7 @@ class CmpETransaction:
 
   def isTransactionValid(self):
     isTransactionValid = True
-    # If the fromAddress is None, no need to signature
+    # If the fromAddress is None, no need to signature
     if not self.fromAddress:
       return isTransactionValid
     else:
@@ -65,7 +66,7 @@ class CmpETransaction:
       except:
         # add log here
         isTransactionValid = False
-
+    
     return isTransactionValid
 
   def __repr__(self):
@@ -78,6 +79,6 @@ class CmpETransaction:
     t['amount'] = self.amount
     t['timestamp'] = self.timestamp
     t['hash'] = str(self.hash)
-    t['signature'] = str(self.signature.hex()) if self.signature else None
+    t['signature'] = self.signature.hex() if self.signature else None
     a = json.dumps(t, default=lambda o: o.__dict__, indent=4)
     return a

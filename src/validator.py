@@ -137,11 +137,11 @@ class CmpECoinValidatorNode():
             if transaction.fromAddress == None:
                 self.blockchain.pendingTransactions.remove(transaction)
                 continue
-            currentWallet = walletDict.get(transaction.fromAddress, 0)
+            currentWallet = walletDict.get(transaction.fromAddress.to_string().hex(), 0)
             if transaction.amount > currentWallet:
                 self.blockchain.pendingTransactions.remove(transaction)
             else:
-                walletDict[transaction.fromAddress] = walletDict.get(transaction.fromAddress, 0) - transaction.amount
+                walletDict[transaction.fromAddress.to_string().hex()] = walletDict.get(transaction.fromAddress.to_string().hex(), 0) - transaction.amount
     
         # should pendings removed when waiting new 
         self.blockchain.toBeValidated = self.blockchain.pendingTransactions
@@ -165,22 +165,36 @@ class CmpECoinValidatorNode():
                                                    type='example'))
 
     def parseBlock(self, body):
-        blockJson = json.loads(body)
+        blockJson = json.loads(body.decode())
         transactions = []
 
         for transactionT in blockJson["transactions"]:
+            print(transactionT)
             transactionJson = json.loads(transactionT)
             fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
             toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
             transaction = CmpETransaction(fromAddress, toAddress,
                                           transactionJson["amount"])
+            transaction.timestamp = transactionJson["timestamp"]
+            transaction.hash = transactionJson["hash"]
+            transaction.signature = transactionJson["signature"]
+
             transactions.append(transaction)
 
         return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
 
     def parseTransaction(self, body):
-        dec = body.decode()
-        transactionJson = json.loads(dec)
-        fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
-        toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
-        return CmpETransaction(fromAddress, toAddress, transactionJson["amount"], transactionJson["signature"], transactionJson["timestamp"])
+        body = json.loads(body)
+        fromAddress = VerifyingKey.from_string(bytes.fromhex(body['fromAddress']), curve=ecdsa.SECP256k1)
+        toAddress = VerifyingKey.from_string(bytes.fromhex(body['toAddress']), curve=ecdsa.SECP256k1)
+        amount = body['amount']
+        timestamp = body['timestamp']
+        hash = body['hash']
+        signature = bytes.fromhex(body['signature'])
+
+        transaction = CmpETransaction(fromAddress, toAddress, amount, False)
+        transaction.timestamp = timestamp
+        transaction.hash = hash
+        transaction.signature = signature
+
+        return transaction

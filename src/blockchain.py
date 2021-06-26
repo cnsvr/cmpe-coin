@@ -35,15 +35,18 @@ class CmpEBlockchain:
 
         # Check initial block of the chain. Must be the genesis block.
         if self.chain[0].prevBlockHash != None:
-            logging.info("Genesis block has no previous block.")
+            print("Genesis block has no previous block.")
             return False
         for transaction in self.chain[0].transactions:
             if transaction.amount != INITIAL_AMOUNT or transaction.fromAddress != None:
-                walletDict[transaction.toAddress] = walletDict.get(transaction.toAddress, 0) + INITIAL_AMOUNT
-                logging.info("Genesis block cannot have transactions with different amount and address.")
+                print("Genesis block wrong.")
                 if returnWallet:
                     return False, dict()
                 return False
+            else:
+                walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + INITIAL_AMOUNT
+                print("Genesis block cannot have transactions with different amount and address.")
+                
 
         index = 1
 
@@ -83,16 +86,16 @@ class CmpEBlockchain:
                         return False, dict()
                     return False
                 
-                currentWallet = walletDict.get(transaction.fromAddress, 0)
+                currentWallet = walletDict.get(transaction.fromAddress.to_string().hex(), 0)
                 if transaction.amount > currentWallet:
-                    logging.info(f"{transaction.fromAddress} spent more than it has. Chain not valid.")
+                    logging.info(f"{transaction.fromAddress.to_string().hex()} spent more than it has. Chain not valid.")
                     if returnWallet:
                         return False, dict()
                     return False
-                walletDict[transaction.fromAddress] = walletDict.get(transaction.fromAddress, 0) - transaction.amount
+                walletDict[transaction.fromAddress.to_string().hex()] = walletDict.get(transaction.fromAddress.to_string().hex(), 0) - transaction.amount
 
             for transaction in lastBlock.transactions:
-                walletDict[transaction.toAddress] = walletDict.get(transaction.toAddress, 0) + transaction.amount
+                walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + transaction.amount
 
             index = index + 1
 
