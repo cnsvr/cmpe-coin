@@ -33,7 +33,7 @@ class CmpETransaction:
     self.amount = amount
     self.timestamp = time.time() if not timestamp else timestamp
     self.hash = self.__calculateTransactionHash()
-    self.signature = signature.encode('unicode_escape') if signature else None
+    self.signature = signature
     if (log):
       logging.info("A transaction({}) of {} CmpECoin created from {} to {} at {}".format(self.hash,
                                                                                        amount,
@@ -74,11 +74,10 @@ class CmpETransaction:
 
   def toJSON(self):
     t = {}
-    t['fromAddress'] = str(self.fromAddress.to_string().hex()) if self.fromAddress else None
-    t['toAddress'] = str(self.toAddress.to_string().hex())
+    t['fromAddress'] = self.fromAddress.to_string().hex() if self.fromAddress else None
+    t['toAddress'] = self.toAddress.to_string().hex()
     t['amount'] = self.amount
     t['timestamp'] = self.timestamp
-    t['hash'] = str(self.hash)
+    t['hash'] = self.hash
     t['signature'] = self.signature.hex() if self.signature else None
-    a = json.dumps(t, default=lambda o: o.__dict__, indent=4)
-    return a
+    return json.dumps(t, default=lambda o: o.__dict__, indent=4)

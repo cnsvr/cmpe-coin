@@ -25,7 +25,6 @@ class CmpECoinSimpleNode():
         print("Simple Node Initialized")
         self.blockChainMutex = Lock()
         self.blockChain = CmpEBlockchain([])
-        print(wallet)
         self.wallet = wallet
         self.PKsInNetwork = PKsInNetwork.copy()
         self.PKsInNetwork.remove(self.wallet.getPublicKey())
@@ -34,6 +33,7 @@ class CmpECoinSimpleNode():
         self.parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
         self.joinCmpECoinNetw()
 
+    
 
 
     def joinCmpECoinNetw(self):
@@ -65,7 +65,6 @@ class CmpECoinSimpleNode():
         print('Public key', public_key.to_string().hex(), ' is sent to dispatcher')
 
     def validatedBlockConsumer(self):
-        print("Got a block")
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
         channel.exchange_declare(exchange = os.getenv("BLOCK_EXCHANGE"), exchange_type='fanout')
@@ -162,7 +161,6 @@ class CmpECoinSimpleNode():
         my_current_balance = self.blockChain.getBalanceOf(self.wallet.getPublicKey())
         self.blockChainMutex.release()
         self.wallet.setCurrentBalance(my_current_balance)
-        print(my_current_balance)
         if my_current_balance == 0:
             return True
         amount = np.random.exponential(self.meanTransactionAmount)

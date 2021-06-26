@@ -44,9 +44,7 @@ class CmpEBlockchain:
                     return False, dict()
                 return False
             else:
-                walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + INITIAL_AMOUNT
-                print("Genesis block cannot have transactions with different amount and address.")
-                
+                walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + INITIAL_AMOUNT                
 
         index = 1
 

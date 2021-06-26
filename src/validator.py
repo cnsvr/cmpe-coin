@@ -169,7 +169,6 @@ class CmpECoinValidatorNode():
         transactions = []
 
         for transactionT in blockJson["transactions"]:
-            print(transactionT)
             transactionJson = json.loads(transactionT)
             fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
             toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
@@ -190,7 +189,7 @@ class CmpECoinValidatorNode():
         amount = body['amount']
         timestamp = body['timestamp']
         hash = body['hash']
-        signature = bytes.fromhex(body['signature'])
+        signature = bytes.fromhex(body['signature'])  if body["signature"] else None
 
         transaction = CmpETransaction(fromAddress, toAddress, amount, False)
         transaction.timestamp = timestamp

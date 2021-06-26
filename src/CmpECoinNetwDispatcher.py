@@ -79,10 +79,6 @@ class CmpECoinNetwDispatcher():
             self.blockchainMutex.acquire()
             self.blockchain.chain.append(block)
             if self.blockchain.isChainValid():
-                st = ""
-                for transaction in self.blockchain.chain:
-                    st = st + " , " + transaction.hash
-                print(f'[x] Added a validated block to its blockchain with hashes {st}')
                 self.blockchainMutex.release()
                 channel.basic_publish(exchange=os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
                 print(" [x] Forwarded the validated block to all nodes %r" % body)
@@ -114,15 +110,20 @@ class CmpECoinNetwDispatcher():
             
 
     def parseBlock(self, body):
-        blockJson = json.loads(body)
+        blockJson = json.loads(body.decode())
         transactions = []
 
         for transactionT in blockJson["transactions"]:
+            print(transactionT)
             transactionJson = json.loads(transactionT)
             fromAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["fromAddress"]), curve=ecdsa.SECP256k1) if transactionJson["fromAddress"] else None
             toAddress = VerifyingKey.from_string(bytes.fromhex(transactionJson["toAddress"]), curve=ecdsa.SECP256k1)
             transaction = CmpETransaction(fromAddress, toAddress,
                                           transactionJson["amount"])
+            transaction.timestamp = transactionJson["timestamp"]
+            transaction.hash = transactionJson["hash"]
+            transaction.signature = bytes.fromhex(transactionJson["signature"]) if transactionJson["signature"] else None
+
             transactions.append(transaction)
 
         return CmpEBlock(0, transactions, blockJson["prevBlockHash"], blockJson["proofOfWork"], blockJson["timestamp"])
