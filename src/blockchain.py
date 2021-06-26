@@ -124,7 +124,7 @@ class CmpEBlockchain:
         for transaction in self.getAllTransactionsFor(address):
             if transaction.fromAddress == address:
                 balance -= transaction.amount
-            else:
+            if transaction.toAddress == address:
                 balance += transaction.amount
 
         return balance
