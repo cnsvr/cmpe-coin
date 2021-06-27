@@ -31,7 +31,7 @@ class CmpECoinNetwDispatcher():
         channel.exchange_declare(exchange=os.getenv("BLOCK_EXCHANGE"), exchange_type='fanout')
         body = self.blockchain.chain[0].toJSON()
         channel.basic_publish(exchange= os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
-        print(" [x] Forwarded the genesis block to all nodes ")
+        print(" [g] Forwarded the genesis block to all nodes ")
 
         transactionThread = Thread(target=self.listenForTransactions)
         validatedBlocksThread = Thread(target=self.listenForValidatedBlocks)
@@ -46,7 +46,7 @@ class CmpECoinNetwDispatcher():
         channel = connection.channel()
         channel.exchange_declare(exchange=os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
         channel.basic_publish(exchange=os.getenv("TRANSX_EXCHANGE"), routing_key='', body=transx)
-        print(" [x] Forwarded the transaction to all validator blocks")
+        print(" [t] Forwarded the transaction to all validator blocks")
         return True
 
     def listenForTransactions(self):
@@ -85,7 +85,7 @@ class CmpECoinNetwDispatcher():
 
         def callback(ch, method, properties, body):
             block = self.parseBlock(body)
-            print(" [x] Received a validated block")
+            print(" [B] Received a validated block")
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
             block = self.parseBlock(body)
@@ -94,11 +94,11 @@ class CmpECoinNetwDispatcher():
             if self.blockchain.isChainValid():
                 self.blockchainMutex.release()
                 channel.basic_publish(exchange=os.getenv("BLOCK_EXCHANGE"), routing_key='', body=body)
-                print(" [x] Forwarded the validated block to all nodes " )
+                print(" [fb] Forwarded the validated block to all nodes " )
             else:    
                 self.blockchain.chain.pop()
                 print(
-                    f'[x] received an invalid block, did not add to its blockchain.')
+                    f'[ib] received an invalid block, did not add to its blockchain.')
                 self.blockchainMutex.release()
 
         channel.basic_consume(queue=os.getenv("VALIDATED_TO_DISP"), on_message_callback=callback)
@@ -117,7 +117,7 @@ class CmpECoinNetwDispatcher():
         channel.queue_bind(exchange = os.getenv("VALIDATION_BEACON"), queue=queue_name)
 
         while True:
-            print("[x] Sent beacon for validated blocks.")
+            print("[bea] Sent beacon for validated blocks.")
             time.sleep(10)
             channel.basic_publish(exchange=os.getenv("VALIDATION_BEACON"), routing_key='', body="validate")
             

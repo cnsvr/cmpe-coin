@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class CmpECoinSimpleNode():
-    def __init__(self, wallet, meanTransactionInterDuration, meanTransactionAmount, PKsInNetwork = []):
+    def __init__(self, wallet, meanTransactionInterDuration, meanTransactionAmount, PKsInNetwork = [],name = "", pkDict = dict()):
         print("Simple Node Initialized")
         self.blockChainMutex = Lock()
         self.blockChain = CmpEBlockchain([])
@@ -30,10 +30,10 @@ class CmpECoinSimpleNode():
         self.PKsInNetwork.remove(self.wallet.getPublicKey())
         self.meanTransactionInterDuration = meanTransactionInterDuration
         self.meanTransactionAmount = meanTransactionAmount
+        self.pkDict = pkDict
+        self.name = name if name != "" else self.wallet.getPublicKey().to_string().hex()[0:10]
         self.parameters = pika.ConnectionParameters('localhost', 5672, '/', pika.PlainCredentials('user', 'password'))
         self.joinCmpECoinNetw()
-
-    
 
 
     def joinCmpECoinNetw(self):
@@ -88,10 +88,10 @@ class CmpECoinSimpleNode():
         self.blockChainMutex.acquire()
         self.blockChain.chain.append(body)
         if not self.blockChain.isChainValid():
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Blockchain is not valid! Block is discarded...')
+            print(f'Simple node {self.name}: Blockchain is not valid! Block is discarded...')
             self.blockChain.chain.pop()
         else:
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Blockchain is valid, block is added to the blockchain.')
+            print(f'Simple node {self.name}: Blockchain is valid, block is added to the blockchain.')
         # release blockchain
         self.blockChainMutex.release()
     
@@ -185,7 +185,9 @@ class CmpECoinSimpleNode():
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an valid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
+            frAddress = transaction.toAddress.to_string().hex()
+            fr = self.pkDict.get(frAddress,  frAddress[0:10])
+            print(f'Simple node {self.name}: created an valid transaction with to {fr} with amount {transaction.amount}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:
@@ -220,7 +222,10 @@ class CmpECoinSimpleNode():
             # Convert to transaction to Json format
             transaction_json=transaction.toJSON()
             # send the json to node.
-            print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an invalid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
+            frAddress = transaction.toAddress.to_string().hex()
+            fr = self.pkDict.get(frAddress,  frAddress[0:10])
+            print(f'Simple node {self.name}: created an invalid transaction with to {fr} with amount {transaction.amount}.')
+            #print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: created an invalid transaction with hash {transaction.hash} from {transaction.signature.hex()}.')
             self.sendTransactionToDispatcher(transaction_json)
             return True
         else:
@@ -275,8 +280,8 @@ class CmpECoinSimpleNode():
         channel.start_consuming()
 
     def handleReceivedTransaction(self, channel, method, properties, body):
-        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received transaction')
-        transaction = self.parseAndCreateTransaction(body)        
+        transaction = self.parseAndCreateTransaction(body) 
+        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received transaction from outside')       
         if transaction:
             # send to transaction to dispatcher
             # Convert to transaction to Json format

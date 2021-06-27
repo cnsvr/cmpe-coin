@@ -91,6 +91,12 @@ class CmpEBlockchain:
                         return False, dict()
                     return False
                 walletDict[transaction.fromAddress.to_string().hex()] = walletDict.get(transaction.fromAddress.to_string().hex(), 0) - transaction.amount
+            
+            if fromNoneCount == 1 and len(lastBlock.transactions) == 1:
+                logging.info(f"Block cannot only have reward. Chain not valid.")
+                if returnWallet:
+                    return False, dict()
+                return False
 
             for transaction in lastBlock.transactions:
                 walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + transaction.amount
