@@ -200,11 +200,8 @@ class CmpECoinSimpleNode():
         self.blockChainMutex.release()
 
         self.wallet.setCurrentBalance(my_current_balance)
-        amount = np.random.exponential(self.meanTransactionAmount)
+        amount = my_current_balance + np.random.exponential(self.meanTransactionAmount)
 
-        # Find enough amount for valid transaction
-        while my_current_balance > amount:
-            amount = np.random.exponential(self.meanTransactionAmount)
         
         random_pk = random.choice(self.PKsInNetwork)
         transaction = CmpETransaction(self.wallet.getPublicKey(), random_pk, amount)
@@ -271,17 +268,17 @@ class CmpECoinSimpleNode():
         channel = connection.channel()
         #channel.exchange_declare(exchange='dispatcherNewTransaction', exchange_type='fanout')
         queue_name = 'transactiona'+self.wallet.getPublicKey().to_string().hex() 
-        channel.queue_declare(queue=queue_name, exclusive=True)
+        channel.queue_declare(queue=queue_name, exclusive = True)
         #channel.queue_bind(exchange='dispatcherNewTransaction', queue='transaction')
         channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedTransaction, auto_ack=True)
         #channel.basic_consume(queue='transaction', on_message_callback=self.handleReceivedTransaction, auto_ack=True)
-        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: Starting to listen for transactions from third party users (for test/demo purposes)...')
+        print(f'Simple node {self.name}: Starting to listen for transactions from third party users (for test/demo purposes)...')
         #print('Starting to listen for transactions from third party users (for test/demo purposes)... ')
         channel.start_consuming()
 
     def handleReceivedTransaction(self, channel, method, properties, body):
         transaction = self.parseAndCreateTransaction(body) 
-        print(f'Simple node {self.wallet.getPublicKey().to_string().hex()[0:10]}: received transaction from outside')       
+        print(f'Simple node {self.name}: received transaction from outside')       
         if transaction:
             # send to transaction to dispatcher
             # Convert to transaction to Json format
