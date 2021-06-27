@@ -5,6 +5,8 @@ import random
 import math
 import sys
 import json
+import time
+from datetime import datetime
 
 class CmpEBlock():
     def __init__(self, index, transactions, prevBlockHash, proofOfWork=0, timestamp=time.time()):

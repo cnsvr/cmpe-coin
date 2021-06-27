@@ -1,10 +1,4 @@
 from validator import CmpECoinValidatorNode
+Publics = {'093bd529134dfb8d23f790b0ee86c5ddceb5799701331c46ea767daab1a4b09b4478c1b05e34f7e885345e83c0222fe0883ca6ab2621447c34472d0416c0eb7c':0, '280ce949f4b465987b8e3aa69ba4bab7dbc0f8792f237fb097322d4d8174f875e37490e81dd864499ae46cf869e338b3b35839d7946575cb8417b935dceefba7':1, '8be6ff238a7989d72d543bdf07df7132604fb95e7842f81e8ca140cdc8bbe247054ec61caa6e88075c5a200d0fd1b7394c3cad0dd2c1d062babdf01ec0d718da':2}
 
-try:
-    CmpECoinValidatorNode()
-except KeyboardInterrupt:
-    print('Interrupted')
-    try:
-        sys.exit(0)
-    except SystemExit:
-        os._exit(0)
+CmpECoinValidatorNode(Publics)

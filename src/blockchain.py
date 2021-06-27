@@ -51,7 +51,7 @@ class CmpEBlockchain:
         while index < len(self.chain):
             lastBlock = self.chain[index]
 
-            lastBlockHash = lastBlock.calculateCurrBlockHash()
+            lastBlockHash = lastBlock.currBlockHash
 
             if not lastBlock.hasValidTransactions():
                 logging.info("Chain has nonvalid transactions.")
@@ -66,7 +66,7 @@ class CmpEBlockchain:
 
             prevBlock = self.chain[index - 1]
 
-            if lastBlock.prevBlockHash != prevBlock.calculateCurrBlockHash():
+            if lastBlock.prevBlockHash != prevBlock.currBlockHash:
                 logging.info("Chain is not properly linked.")
                 if returnWallet:
                     return False, dict()
@@ -91,6 +91,12 @@ class CmpEBlockchain:
                         return False, dict()
                     return False
                 walletDict[transaction.fromAddress.to_string().hex()] = walletDict.get(transaction.fromAddress.to_string().hex(), 0) - transaction.amount
+            
+            if fromNoneCount == 1 and len(lastBlock.transactions) == 1:
+                logging.info(f"Block cannot only have reward. Chain not valid.")
+                if returnWallet:
+                    return False, dict()
+                return False
 
             for transaction in lastBlock.transactions:
                 walletDict[transaction.toAddress.to_string().hex()] = walletDict.get(transaction.toAddress.to_string().hex(), 0) + transaction.amount
@@ -108,10 +114,11 @@ class CmpEBlockchain:
             return True
         return False
 
-    def validatePendingTransactions(self, rewardAddress):
+    def validatePendingTransactions(self, rewardAddress, prevHash, tempList):
 
-        self.toBeValidated.append(CmpETransaction(None, rewardAddress, self.validationReward))
-        newBlock = CmpEBlock(0, self.toBeValidated, self.chain[len(self.chain) - 1].calculateCurrBlockHash())
+        tempList.append(CmpETransaction(None, rewardAddress, self.validationReward))
+        
+        newBlock = CmpEBlock(0, tempList, prevHash)
 
         newBlock.validateBlock(self.difficulty)
         self.toBeValidated = []
@@ -123,7 +130,7 @@ class CmpEBlockchain:
         for transaction in self.getAllTransactionsFor(address):
             if transaction.fromAddress == address:
                 balance -= transaction.amount
-            else:
+            if transaction.toAddress == address:
                 balance += transaction.amount
 
         return balance
