@@ -41,7 +41,7 @@ class CmpECoinValidatorNode():
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
         channel.exchange_declare(exchange= os.getenv("TRANSX_EXCHANGE"), exchange_type='fanout')
-        queue_name = 'transaction'+self.wallet.getPublicKey().to_string().hex()  
+        queue_name = 'transactionV'+self.wallet.getPublicKey().to_string().hex()  
         channel.queue_declare(queue=queue_name, exclusive=True)
         channel.queue_bind(exchange= os.getenv("TRANSX_EXCHANGE"), queue=queue_name)
         channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedTransactions, auto_ack=True)

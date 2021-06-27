@@ -203,7 +203,7 @@ class CmpECoinSimpleNode():
         amount = np.random.exponential(self.meanTransactionAmount)
 
         # Find enough amount for valid transaction
-        while my_current_balance < amount:
+        while my_current_balance > amount:
             amount = np.random.exponential(self.meanTransactionAmount)
         
         random_pk = random.choice(self.PKsInNetwork)
@@ -212,11 +212,11 @@ class CmpECoinSimpleNode():
         # Sign the transaction before sending it to the node.
         if transaction.signTransaction(self.wallet.getPrivateKey()):
             # Transaction is valid
-            self.wallet.setCurrentBalance(self.wallet.getCurrentBalance() -  amount)
+            #self.wallet.setCurrentBalance(self.wallet.getCurrentBalance() -  amount)
 
             # Change amount and timestamp of transaction to make invalid.
 
-            transaction.amount = np.random.exponential(self.meanTransactionAmount) ** 2
+            transaction.amount = amount#np.random.exponential(self.meanTransactionAmount) ** 2
             transaction.timestamp = time.time()
 
             # Convert to transaction to Json format
@@ -270,7 +270,7 @@ class CmpECoinSimpleNode():
         connection = pika.BlockingConnection(self.parameters)
         channel = connection.channel()
         #channel.exchange_declare(exchange='dispatcherNewTransaction', exchange_type='fanout')
-        queue_name = 'transaction'+self.wallet.getPublicKey().to_string().hex() 
+        queue_name = 'transactiona'+self.wallet.getPublicKey().to_string().hex() 
         channel.queue_declare(queue=queue_name, exclusive=True)
         #channel.queue_bind(exchange='dispatcherNewTransaction', queue='transaction')
         channel.basic_consume(queue=queue_name, on_message_callback=self.handleReceivedTransaction, auto_ack=True)
